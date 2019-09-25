@@ -69,7 +69,7 @@ namespace EventBusRabbitMQ
                 _persistentConnection.TryConnect();
             }
 
-            var policy = RetryPolicy.Handle<BrokerUnreachableException>()
+            var policy = Policy.Handle<BrokerUnreachableException>()
                 .Or<SocketException>()
                 .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                 {
@@ -86,7 +86,6 @@ namespace EventBusRabbitMQ
                 _logger.LogTrace("Declaring RabbitMQ exchange to publish event: {EventId}", @event.Id);
 
                 channel.ExchangeDeclare(exchange: BROKER_NAME, type: "direct");
-
                 var message = JsonConvert.SerializeObject(@event);
                 var body = Encoding.UTF8.GetBytes(message);
 

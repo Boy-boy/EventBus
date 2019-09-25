@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventBus;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAppPublish.Controllers
@@ -10,36 +11,30 @@ namespace WebAppPublish.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
+        private readonly IEventBus _eventBus;
+
+        public ValuesController(IEventBus eventBus)
+        {
+            _eventBus = eventBus;
+        }
+
         // GET api/values
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
+            _eventBus.Publish( new PublishEvent());
             return new string[] { "value1", "value2" };
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public ActionResult<string> Get(int id)
-        {
-            return "value";
-        }
+      
+    }
 
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody] string value)
+    public class PublishEvent : IntegrationEvent
+    {
+        public PublishEvent()
         {
+            Name = "高波";
         }
-
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+        public string Name { get; set; }
     }
 }
