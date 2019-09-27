@@ -22,18 +22,22 @@ namespace WebAppPublish.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            _eventBus.Publish( new PublishEvent());
+            for (int i = 0; i < 100; i++)
+            {
+                _eventBus.Publish(new UserLocationUpdatedIntegrationEvent(i.ToString()));
+            }
+          
             return new string[] { "value1", "value2" };
         }
 
       
     }
 
-    public class PublishEvent : IntegrationEvent
+    public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
-        public PublishEvent()
+        public UserLocationUpdatedIntegrationEvent(string name)
         {
-            Name = "高波";
+            Name = name;
         }
         public string Name { get; set; }
     }
