@@ -26,7 +26,10 @@ namespace WebAppPublish.Controllers
             {
                 _eventBus.Publish(new UserLocationUpdatedIntegrationEvent(i.ToString()));
             }
-          
+            for (int i = 0; i < 100; i++)
+            {
+                _eventBus.Publish(new WebAppPublish.Event.UserLocationUpdatedIntegrationEvent(i));
+            }
             return new string[] { "value1", "value2" };
         }
 
@@ -41,4 +44,7 @@ namespace WebAppPublish.Controllers
         }
         public string Name { get; set; }
     }
+
+
+   
 }

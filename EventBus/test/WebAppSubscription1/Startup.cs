@@ -99,13 +99,7 @@ namespace WebAppSubscription1
 
     public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
-        public string UserId { get; set; }
-
-
-        public UserLocationUpdatedIntegrationEvent(string userId)
-        {
-            UserId = userId;
-        }
+        public string Age { get; set; }
     }
 
 

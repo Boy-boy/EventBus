@@ -59,7 +59,7 @@ namespace WebAppSubscription
                 return new DefaultRabbitMqPersistentConnection(factory, logger, retryCount);
             });
 
-
+            services.AddTransient<UserLocationUpdatedIntegrationEventHandler>();
             var subscriptionClientName = Configuration["SubscriptionClientName"];
             services.AddSingleton<IEventBus, EventBusRabbitMq>(sp =>
             {
@@ -91,7 +91,7 @@ namespace WebAppSubscription
             }
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
-            eventBus.Subscribe<WebAppSubscription.IntegrationEvents.Events1.UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
+          //  eventBus.Subscribe<WebAppSubscription.IntegrationEvents.Events1.UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
             app.UseMvc();
         }
     }
