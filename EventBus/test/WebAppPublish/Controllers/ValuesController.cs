@@ -22,10 +22,10 @@ namespace WebAppPublish.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            for (int i = 0; i < 100; i++)
-            {
-                _eventBus.Publish(new UserLocationUpdatedIntegrationEvent(i.ToString()));
-            }
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    _eventBus.Publish(new UserLocationUpdatedIntegrationEvent(i.ToString()));
+            //}
             for (int i = 0; i < 100; i++)
             {
                 _eventBus.Publish(new WebAppPublish.Event.UserLocationUpdatedIntegrationEvent(i));

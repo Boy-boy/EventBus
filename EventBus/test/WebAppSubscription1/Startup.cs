@@ -9,6 +9,7 @@ using EventBusRabbitMQ;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,12 @@ namespace WebAppSubscription1
         // This method gets called by the runtime. Use this method to add services to the container.
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContextPool<DbContext,SubscriptionDbContext>(options =>
+            {
+                options.UseSqlServer(Configuration.GetConnectionString("DbSubscriptionContext"));
+            });
+
+            services.AddTransient<UserLocationUpdatedIntegrationEventHandler>();
             services.AddMvc(option => { option.EnableEndpointRouting = false; }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             services.AddSingleton<IRabbitMqPersistentConnection>(sp =>
             {
@@ -99,18 +106,29 @@ namespace WebAppSubscription1
 
     public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
-        public string Age { get; set; }
+        public int Age { get; set; }
     }
 
 
     public class UserLocationUpdatedIntegrationEventHandler
         : IIntegrationEventHandler<UserLocationUpdatedIntegrationEvent>
     {
+        private readonly SubscriptionDbContext _dbContext;
 
+        public UserLocationUpdatedIntegrationEventHandler(DbContext dbContext)
+        {
+            _dbContext = dbContext as SubscriptionDbContext;
+        }
 
         public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
         {
             await Task.Yield();
+            _dbContext.Students.Add(new Student()
+            {
+                Id = @event.Id,
+                Age= @event.Age
+            });
+           await _dbContext.SaveChangesAsync();
         }
 
     }
