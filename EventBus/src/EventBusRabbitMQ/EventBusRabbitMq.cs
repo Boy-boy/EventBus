@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using EventBus;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Polly;
-using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
+using System;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace EventBusRabbitMQ
 {
@@ -43,7 +40,7 @@ namespace EventBusRabbitMQ
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
 
-        private void SubsManager_OnEventRemoved(object sender, string eventName)
+        private void SubsManager_OnEventRemoved(object sender, string eventKey)
         {
             if (!_persistentConnection.IsConnected)
             {
@@ -54,7 +51,7 @@ namespace EventBusRabbitMQ
             {
                 channel.QueueUnbind(queue: _queueName,
                     exchange: BROKER_NAME,
-                    routingKey: eventName);
+                    routingKey: eventKey);
 
                 if (!_subsManager.IsEmpty) return;
                 _queueName = string.Empty;
@@ -77,7 +74,7 @@ namespace EventBusRabbitMQ
                 });
 
             var eventName = @event.GetType().Name;
-
+            var  routingKey = string.IsNullOrWhiteSpace(@event.EventTag)? eventName: $"{@event.EventTag}_{eventName}";
             _logger.LogTrace("Creating RabbitMQ channel to publish event: {EventId} ({EventName})", @event.Id, eventName);
 
             using (var channel = _persistentConnection.CreateModel())
@@ -98,7 +95,7 @@ namespace EventBusRabbitMQ
 
                     channel.BasicPublish(
                         exchange: BROKER_NAME,
-                        routingKey: eventName,
+                        routingKey: routingKey,
                         mandatory: true,
                         basicProperties: properties,
                         body: body);
@@ -112,8 +109,9 @@ namespace EventBusRabbitMQ
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
         {
-            var eventName = _subsManager.GetEventKey<T>();
-            DoInternalSubscription(eventName);
+            var eventName = _subsManager.GetEventName<T>();
+            var eventKey = _subsManager.GetEventKey<T>();
+            DoInternalSubscription(eventKey);
 
             _logger.LogInformation("Subscribing to event {EventName} with {EventHandler}", eventName, typeof(TH).Name);
 
@@ -153,9 +151,9 @@ namespace EventBusRabbitMQ
             return channel;
         }
 
-        private void DoInternalSubscription(string eventName)
+        private void DoInternalSubscription(string eventKey)
         {
-            var containsKey = _subsManager.HasSubscriptionsForEvent(eventName);
+            var containsKey = _subsManager.HasSubscriptionsForEvent(eventKey);
             if (containsKey) return;
             if (!_persistentConnection.IsConnected)
             {
@@ -166,7 +164,7 @@ namespace EventBusRabbitMQ
             {
                 channel.QueueBind(queue: _queueName,
                     exchange: BROKER_NAME,
-                    routingKey: eventName);
+                    routingKey: eventKey);
             }
         }
 
@@ -200,7 +198,7 @@ namespace EventBusRabbitMQ
 
         private async Task Consumer_Received(object sender, BasicDeliverEventArgs eventArgs)
         {
-            var eventName = eventArgs.RoutingKey;
+            var eventKey = eventArgs.RoutingKey;
             var message = Encoding.UTF8.GetString(eventArgs.Body);
 
             try
@@ -210,7 +208,7 @@ namespace EventBusRabbitMQ
                     throw new InvalidOperationException($"Fake exception requested: \"{message}\"");
                 }
 
-                await ProcessEvent(eventName, message);
+                await ProcessEvent(eventKey, message);
             }
             catch (Exception ex)
             {
@@ -223,21 +221,21 @@ namespace EventBusRabbitMQ
             _consumerChannel.BasicAck(eventArgs.DeliveryTag, multiple: false);
         }
 
-        private async Task ProcessEvent(string eventName, string message)
+        private async Task ProcessEvent(string eventKey, string message)
         {
-            _logger.LogTrace("Processing RabbitMQ event: {EventName}", eventName);
+            _logger.LogTrace("Processing RabbitMQ event: {EventKey}", eventKey);
 
-            if (_subsManager.HasSubscriptionsForEvent(eventName))
+            if (_subsManager.HasSubscriptionsForEvent(eventKey))
             {
                 using (var scope = _autofac.BeginLifetimeScope(AUTOFAC_SCOPE_NAME))
                 {
-                    var handlerTypes = _subsManager.GetHandlersForEvent(eventName);
+                    var handlerTypes = _subsManager.GetHandlersForEvent(eventKey);
                     foreach (var handlerType in handlerTypes)
                     {
 
                         var handler = scope.ResolveOptional(handlerType);
                         if (handler == null) continue;
-                        var eventType = _subsManager.GetEventTypeByName(eventName);
+                        var eventType = _subsManager.GetEventTypeByName(eventKey);
                         var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
                         var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
 
@@ -248,7 +246,7 @@ namespace EventBusRabbitMQ
             }
             else
             {
-                _logger.LogWarning("No subscription for RabbitMQ event: {EventName}", eventName);
+                _logger.LogWarning("No subscription for RabbitMQ event: {EventKey}", eventKey);
             }
         }
     }

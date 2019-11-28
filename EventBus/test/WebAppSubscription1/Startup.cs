@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using EventBus;
 using EventBusRabbitMQ;
@@ -13,8 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using System;
+using System.Threading.Tasks;
 
 namespace WebAppSubscription1
 {
@@ -106,6 +103,11 @@ namespace WebAppSubscription1
 
     public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
+        public UserLocationUpdatedIntegrationEvent()
+        {
+            EventTag = "publish";
+        }
+
         public int Age { get; set; }
     }
 

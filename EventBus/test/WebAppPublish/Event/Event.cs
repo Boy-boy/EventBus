@@ -7,6 +7,7 @@ namespace WebAppPublish.Event
         public UserLocationUpdatedIntegrationEvent(int age)
         {
             Age = age;
+            EventTag = "publish";
         }
         public int Age { get; set; }
     }

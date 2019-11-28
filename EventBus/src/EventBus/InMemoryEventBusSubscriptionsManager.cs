@@ -7,14 +7,14 @@ namespace EventBus
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
         private readonly Dictionary<string, List<Type>> _handlers;
-        private readonly List<Type> _eventTypes;
+        private readonly Dictionary<string, Type> _eventTypes;
 
         public event EventHandler<string> OnEventRemoved;
 
         public InMemoryEventBusSubscriptionsManager()
         {
             _handlers = new Dictionary<string, List<Type>>();
-            _eventTypes = new List<Type>();
+            _eventTypes = new Dictionary<string, Type>();
         }
 
         public bool IsEmpty => !_handlers.Keys.Any();
@@ -25,27 +25,28 @@ namespace EventBus
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
         {
-            var eventName = GetEventKey<T>();
-            DoAddSubscription(typeof(TH), eventName);
+            var eventName = GetEventName<T>();
+            var eventKey = GetEventKey<T>();
+            DoAddSubscription(typeof(TH), eventKey, eventName);
 
-            if (!_eventTypes.Contains(typeof(T)))
+            if (!_eventTypes.ContainsKey(eventKey))
             {
-                _eventTypes.Add(typeof(T));
+                _eventTypes.Add(eventKey, typeof(T));
             }
         }
 
-        private void DoAddSubscription(Type handlerType, string eventName)
+        private void DoAddSubscription(Type handlerType, string eventKey, string eventName)
         {
-            if (!HasSubscriptionsForEvent(eventName))
+            if (!HasSubscriptionsForEvent(eventKey))
             {
-                _handlers.Add(eventName, new List<Type>());
+                _handlers.Add(eventKey, new List<Type>());
             }
-            if (_handlers[eventName].Any(s => s == handlerType))
+            if (_handlers[eventKey].Any(s => s == handlerType))
             {
                 throw new ArgumentException(
                     $"Handler Type {handlerType.Name} already registered for '{eventName}'", nameof(handlerType));
             }
-            _handlers[eventName].Add(handlerType);
+            _handlers[eventKey].Add(handlerType);
         }
 
 
@@ -54,64 +55,67 @@ namespace EventBus
             where TH : IIntegrationEventHandler<T>
             where T : IntegrationEvent
         {
-            var handlerToRemove = FindSubscriptionToRemove<T, TH>();
-            var eventName = GetEventKey<T>();
-            DoRemoveHandler(eventName, handlerToRemove);
+            var eventKey = GetEventKey<T>();
+            var handlerToRemove = DoFindSubscriptionToRemove(eventKey, typeof(TH));
+            DoRemoveHandler(eventKey, handlerToRemove);
         }
 
 
-        private void DoRemoveHandler(string eventName, Type subsToRemove)
+        private void DoRemoveHandler(string eventKey, Type subsToRemove)
         {
             if (subsToRemove == null) return;
-            _handlers[eventName].Remove(subsToRemove);
-            if (_handlers[eventName].Any()) return;
-            _handlers.Remove(eventName);
-            var eventType = _eventTypes.SingleOrDefault(e => e.Name == eventName);
+            _handlers[eventKey].Remove(subsToRemove);
+            if (_handlers[eventKey].Any()) return;
+            _handlers.Remove(eventKey);
+            _eventTypes.TryGetValue(eventKey, out var eventType);
             if (eventType != null)
             {
-                _eventTypes.Remove(eventType);
+                _eventTypes.Remove(eventKey);
             }
-            RaiseOnEventRemoved(eventName);
+            RaiseOnEventRemoved(eventKey);
         }
 
         public IEnumerable<Type> GetHandlersForEvent<T>() where T : IntegrationEvent
         {
-            var key = GetEventKey<T>();
-            return GetHandlersForEvent(key);
+            var eventKey = GetEventKey<T>();
+            return GetHandlersForEvent(eventKey);
         }
-        public IEnumerable<Type> GetHandlersForEvent(string eventName) => _handlers[eventName];
+        public IEnumerable<Type> GetHandlersForEvent(string eventKey) => _handlers[eventKey];
 
-        private void RaiseOnEventRemoved(string eventName)
+        private void RaiseOnEventRemoved(string eventKey)
         {
             var handler = OnEventRemoved;
-            handler?.Invoke(this, eventName);
+            handler?.Invoke(this, eventKey);
         }
 
-        private Type FindSubscriptionToRemove<T, TH>()
-             where T : IntegrationEvent
-             where TH : IIntegrationEventHandler<T>
+        private Type DoFindSubscriptionToRemove(string eventKey, Type handlerType)
         {
-            var eventName = GetEventKey<T>();
-            return DoFindSubscriptionToRemove(eventName, typeof(TH));
-        }
-
-        private Type DoFindSubscriptionToRemove(string eventName, Type handlerType)
-        {
-            return !HasSubscriptionsForEvent(eventName) ? null : _handlers[eventName].SingleOrDefault(s => s == handlerType);
+            return !HasSubscriptionsForEvent(eventKey) ? null : _handlers[eventKey].SingleOrDefault(s => s == handlerType);
         }
 
         public bool HasSubscriptionsForEvent<T>() where T : IntegrationEvent
         {
-            var key = GetEventKey<T>();
-            return HasSubscriptionsForEvent(key);
+            var eventKey = GetEventKey<T>();
+            return HasSubscriptionsForEvent(eventKey);
         }
-        public bool HasSubscriptionsForEvent(string eventName) => _handlers.ContainsKey(eventName);
+        public bool HasSubscriptionsForEvent(string eventKey) => _handlers.ContainsKey(eventKey);
 
-        public Type GetEventTypeByName(string eventName) => _eventTypes.SingleOrDefault(t => t.Name == eventName);
+        public Type GetEventTypeByName(string eventKey)
+        {
+            _eventTypes.TryGetValue(eventKey, out var eventType);
+            return eventType;
+        }
 
-        public string GetEventKey<T>()
+        public string GetEventName<T>()
         {
             return typeof(T).Name;
+        }
+        public string GetEventKey<T>()
+        {
+            var eventName = GetEventName<T>();
+            var eventTag = typeof(T).GetProperty("eventTag")?.GetValue(typeof(T)) as string;
+            var eventKey = string.IsNullOrWhiteSpace(eventTag) ? eventName : $"{eventTag}_{eventName}";
+            return eventKey;
         }
     }
 }

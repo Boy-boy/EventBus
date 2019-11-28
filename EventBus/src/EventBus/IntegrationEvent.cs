@@ -7,16 +7,28 @@ namespace EventBus
         public IntegrationEvent()
         {
             Id = Guid.NewGuid();
-            CreationDate = DateTime.UtcNow;
+            UtcCreation = DateTime.UtcNow;
+            CreationTime = DateTime.Now;
         }
 
-        public IntegrationEvent(Guid id, DateTime createDate)
+        public IntegrationEvent(string eventTag)
+        :this()
+        {
+            EventTag = eventTag;
+        }
+        public IntegrationEvent(Guid id, DateTime createDate,string eventTag)
         {
             Id = id;
-            CreationDate = createDate;
+            CreationTime = createDate;
+            EventTag = eventTag;
+            UtcCreation = DateTime.UtcNow;
         }
         public Guid Id { get; }
 
-        public DateTime CreationDate { get; }
+        public DateTime UtcCreation { get; }
+
+        public DateTime CreationTime { get; }
+
+        public string EventTag { get; set; }
     }
 }

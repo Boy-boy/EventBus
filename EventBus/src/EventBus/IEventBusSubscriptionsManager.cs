@@ -23,5 +23,7 @@ namespace EventBus
         IEnumerable<Type> GetHandlersForEvent<T>() where T : IntegrationEvent;
         IEnumerable<Type> GetHandlersForEvent(string eventName);
         string GetEventKey<T>();
+        string GetEventName<T>();
+        
     }
 }
