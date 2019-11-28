@@ -32,7 +32,7 @@ namespace EventBusRabbitMQ
         {
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _subsManager = subsManager ?? new InMemoryEventBusSubscriptionsManager();
+            _subsManager = subsManager;
             _queueName = queueName;
             _consumerChannel = CreateConsumerChannel();
             _autofac = autofac;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Options;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,13 +7,14 @@ namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
+        private readonly IOptions<SubscriptionsIntegrationEventOption> _options;
         private readonly Dictionary<string, List<Type>> _handlers;
         private readonly Dictionary<string, Type> _eventTypes;
-
         public event EventHandler<string> OnEventRemoved;
 
-        public InMemoryEventBusSubscriptionsManager()
+        public InMemoryEventBusSubscriptionsManager(IOptions<SubscriptionsIntegrationEventOption> options)
         {
+            _options = options;
             _handlers = new Dictionary<string, List<Type>>();
             _eventTypes = new Dictionary<string, Type>();
         }
@@ -49,8 +51,6 @@ namespace EventBus
             _handlers[eventKey].Add(handlerType);
         }
 
-
-
         public void RemoveSubscription<T, TH>()
             where TH : IIntegrationEventHandler<T>
             where T : IntegrationEvent
@@ -59,7 +59,6 @@ namespace EventBus
             var handlerToRemove = DoFindSubscriptionToRemove(eventKey, typeof(TH));
             DoRemoveHandler(eventKey, handlerToRemove);
         }
-
 
         private void DoRemoveHandler(string eventKey, Type subsToRemove)
         {
@@ -113,7 +112,7 @@ namespace EventBus
         public string GetEventKey<T>()
         {
             var eventName = GetEventName<T>();
-            var eventTag = typeof(T).GetProperty("eventTag")?.GetValue(typeof(T)) as string;
+            var eventTag = _options.Value.SubscriptionsIntegrationEvents.FirstOrDefault(p => typeof(T)==p.EventType)?.EventTag;
             var eventKey = string.IsNullOrWhiteSpace(eventTag) ? eventName : $"{eventTag}_{eventName}";
             return eventKey;
         }
