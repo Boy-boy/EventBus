@@ -4,8 +4,6 @@ namespace WebAppSubscription.IntegrationEvents.Events
 {
     public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
-        public string Name { get; set; }
-
-
+        public int Age { get; set; }
     }
 }
