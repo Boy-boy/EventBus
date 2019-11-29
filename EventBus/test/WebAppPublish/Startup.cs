@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
+using System.Collections.Generic;
 using EventBusRabbitMQ.Provider;
 using WebAppPublish.Event;
 
@@ -28,18 +29,21 @@ namespace WebAppPublish
 
             services.AddEventBusRabbitMq(option =>
             {
-                option.ConnectionFactory = new ConnectionFactory()
+                option.RabbitMqConnectionOption = new RabbitMqConnectionOption()
                 {
-                    HostName = "127.0.0.1",
-                    VirtualHost = "/",
-                    DispatchConsumersAsync = true,
-                    UserName = "guest",
-                    Password = "guest"
+                    ConnectionFactory = new ConnectionFactory()
+                    {
+                        HostName = "127.0.0.1",
+                        VirtualHost = "/",
+                        DispatchConsumersAsync = true,
+                        UserName = "guest",
+                        Password = "guest"
+                    }
                 };
-            });
-            services.AddRabbitMqPublishProvider(options =>
-            {
-                options.Add(new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent"));
+                option.RabbitMqPublishOptions=new List<RabbitMqPublishOption>
+                {
+                    new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
+                };
             });
             var container = new ContainerBuilder();
             container.Populate(services);

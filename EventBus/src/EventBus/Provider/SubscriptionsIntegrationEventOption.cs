@@ -11,14 +11,16 @@ namespace EventBus.Provider
         {
             SubscriptionsIntegrationEvents=new List<SubscriptionsIntegrationEvent>();
         }
-        public void AddSubscriptionsIntegrationEventOption(SubscriptionsIntegrationEvent subscriptionsIntegration)
+        public SubscriptionsIntegrationEventOption AddSubscriptionsIntegrationEventOption(SubscriptionsIntegrationEvent subscriptionsIntegration)
         {
             SubscriptionsIntegrationEvents.Add(subscriptionsIntegration);
+            return this;
         }
 
-        public void AddSubscriptionsIntegrationEventOption(Type eventType, string eventTag)
+        public SubscriptionsIntegrationEventOption AddSubscriptionsIntegrationEventOption(Type eventType, string eventTag)
         {
             SubscriptionsIntegrationEvents.Add(new SubscriptionsIntegrationEvent(eventType, eventTag));
+            return this;
         }
     }
 

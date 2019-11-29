@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
+using System.Collections.Generic;
+using EventBus.Provider;
 using EventBusRabbitMQ.Provider;
 using WebAppSubscription.IntegrationEvents.Events;
 using WebAppSubscription.IntegrationEvents.Handlers;
@@ -32,23 +34,25 @@ namespace WebAppSubscription
 
             services.AddEventBusRabbitMq(option =>
             {
-                option.ConnectionFactory = new ConnectionFactory()
+                option.RabbitMqConnectionOption = new RabbitMqConnectionOption()
                 {
-                    HostName = "127.0.0.1",
-                    VirtualHost = "/",
-                    DispatchConsumersAsync = true,
-                    UserName = "guest",
-                    Password = "guest"
+                    ConnectionFactory = new ConnectionFactory()
+                    {
+                        HostName = "127.0.0.1",
+                        VirtualHost = "/",
+                        DispatchConsumersAsync = true,
+                        UserName = "guest",
+                        Password = "guest"
+                    }
                 };
-            });
-            services.AddSubscriptionsIntegrationEventOptionProvider(option =>
-            {
-                option.AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent),"publish");
-            });
-            services.AddRabbitMqSubscribeProvider(options =>
-            {
-                options.Add(new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
-                    "UserLocationUpdatedIntegrationEvent", "UserLocationUpdatedIntegrationEvent"));
+                option.RabbitMqSubscribeOptions = new List<RabbitMqSubscribeOption>
+                {
+                    new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
+                        "UserLocationUpdatedIntegrationEvent", "UserLocationUpdatedIntegrationEvent")
+                };
+                option.SubscriptionsIntegrationEventOption = new SubscriptionsIntegrationEventOption()
+                    .AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent), "publish");
+               ;
             });
             var container = new ContainerBuilder();
             container.Populate(services);
