@@ -31,10 +31,10 @@ namespace WebAppPublish
                 option.ConnectionFactory = new ConnectionFactory()
                 {
                     HostName = "127.0.0.1",
-                    VirtualHost = "aspCoreHost",
+                    VirtualHost = "/",
                     DispatchConsumersAsync = true,
-                    UserName = "gaobo",
-                    Password = "gb278708579"
+                    UserName = "guest",
+                    Password = "guest"
                 };
             });
             services.AddRabbitMqPublishProvider(options =>
