@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using EventBus;
 using EventBusRabbitMQ;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using System;
+using EventBusRabbitMQ.Provider;
+using WebAppPublish.Event;
 
 namespace WebAppPublish
 {
@@ -29,57 +24,23 @@ namespace WebAppPublish
       
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(option => { option.EnableEndpointRouting = false; }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc(option => { option.EnableEndpointRouting = false; });
 
-            services.AddSingleton<IRabbitMqPersistentConnection>(sp =>
+            services.AddEventBusRabbitMq(option =>
             {
-              
-                var logger = sp.GetRequiredService<ILogger<DefaultRabbitMqPersistentConnection>>();
-
-                var factory = new ConnectionFactory()
+                option.ConnectionFactory = new ConnectionFactory()
                 {
-                    HostName = Configuration["EventBusConnection"],
-                    VirtualHost = Configuration["VirtualHost"],
-                    DispatchConsumersAsync = true
+                    HostName = "127.0.0.1",
+                    VirtualHost = "aspCoreHost",
+                    DispatchConsumersAsync = true,
+                    UserName = "gaobo",
+                    Password = "gb278708579"
                 };
-
-                if (!string.IsNullOrEmpty(Configuration["EventBusUserName"]))
-                {
-                    factory.UserName = Configuration["EventBusUserName"];
-                }
-
-                if (!string.IsNullOrEmpty(Configuration["EventBusPassword"]))
-                {
-                    factory.Password = Configuration["EventBusPassword"];
-                }
-
-                var retryCount = 5;
-                if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
-                {
-                    retryCount = int.Parse(Configuration["EventBusRetryCount"]);
-                }
-
-                return new DefaultRabbitMqPersistentConnection(factory, logger, retryCount);
             });
-
-
-            var subscriptionClientName = Configuration["SubscriptionClientName"];
-            services.AddSingleton<IEventBus, EventBusRabbitMq>(sp =>
+            services.AddRabbitMqPublishProvider(options =>
             {
-                var rabbitMqPersistentConnection = sp.GetRequiredService<IRabbitMqPersistentConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusRabbitMq>>();
-                var eventBusSubscriptionManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
-
-                var retryCount = 5;
-                if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
-                {
-                    retryCount = int.Parse(Configuration["EventBusRetryCount"]);
-                }
-                return new EventBusRabbitMq(rabbitMqPersistentConnection, logger, iLifetimeScope, eventBusSubscriptionManager, subscriptionClientName, retryCount);
+                options.Add(new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent"));
             });
-            services.AddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
-
             var container = new ContainerBuilder();
             container.Populate(services);
             return new AutofacServiceProvider(container.Build());

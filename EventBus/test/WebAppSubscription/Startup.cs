@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System;
+using EventBusRabbitMQ.Provider;
 using WebAppSubscription.IntegrationEvents.Events;
 using WebAppSubscription.IntegrationEvents.Handlers;
 
@@ -25,59 +26,29 @@ namespace WebAppSubscription
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(option => { option.EnableEndpointRouting = false; }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
-            services.AddSingleton<IRabbitMqPersistentConnection>(sp =>
-            {
-
-                var logger = sp.GetRequiredService<ILogger<DefaultRabbitMqPersistentConnection>>();
-
-                var factory = new ConnectionFactory()
-                {
-                    HostName = Configuration["EventBusConnection"],
-                    VirtualHost = Configuration["VirtualHost"],
-                    DispatchConsumersAsync = true
-                };
-
-                if (!string.IsNullOrEmpty(Configuration["EventBusUserName"]))
-                {
-                    factory.UserName = Configuration["EventBusUserName"];
-                }
-
-                if (!string.IsNullOrEmpty(Configuration["EventBusPassword"]))
-                {
-                    factory.Password = Configuration["EventBusPassword"];
-                }
-
-                var retryCount = 5;
-                if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
-                {
-                    retryCount = int.Parse(Configuration["EventBusRetryCount"]);
-                }
-
-                return new DefaultRabbitMqPersistentConnection(factory, logger, retryCount);
-            });
-
+            services.AddMvc(option => { option.EnableEndpointRouting = false; });
             services.AddTransient<UserLocationUpdatedIntegrationEventHandler>();
             services.AddTransient<UserLocationUpdatedIntegrationEventHandler1>();
-            var subscriptionClientName = Configuration["SubscriptionClientName"];
-            services.AddSingleton<IEventBus, EventBusRabbitMq>(sp =>
-            {
-                var rabbitMqPersistentConnection = sp.GetRequiredService<IRabbitMqPersistentConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusRabbitMq>>();
-                var eventBusSubscriptionManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
 
-                var retryCount = 5;
-                if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
-                {
-                    retryCount = int.Parse(Configuration["EventBusRetryCount"]);
-                }
-                return new EventBusRabbitMq(rabbitMqPersistentConnection, logger, iLifetimeScope, eventBusSubscriptionManager, subscriptionClientName, retryCount);
-            });
-            services.AddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
-            services.Configure<SubscriptionsIntegrationEventOption>(option =>
+            services.AddEventBusRabbitMq(option =>
             {
-                option.AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent), "publish");
+                option.ConnectionFactory = new ConnectionFactory()
+                {
+                    HostName = "127.0.0.1",
+                    VirtualHost = "aspCoreHost",
+                    DispatchConsumersAsync = true,
+                    UserName = "gaobo",
+                    Password = "gb278708579"
+                };
+            });
+            services.AddSubscriptionsIntegrationEventOptionProvider(option =>
+            {
+                option.AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent),"publish");
+            });
+            services.AddRabbitMqSubscribeProvider(options =>
+            {
+                options.Add(new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
+                    "UserLocationUpdatedIntegrationEvent", "UserLocationUpdatedIntegrationEvent"));
             });
             var container = new ContainerBuilder();
             container.Populate(services);

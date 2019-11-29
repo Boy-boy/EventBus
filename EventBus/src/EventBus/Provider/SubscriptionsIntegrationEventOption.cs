@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EventBus
+namespace EventBus.Provider
 {
     public class SubscriptionsIntegrationEventOption
     {

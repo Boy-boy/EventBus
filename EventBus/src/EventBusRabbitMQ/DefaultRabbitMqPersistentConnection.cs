@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EventBusRabbitMQ.Provider;
+using Microsoft.Extensions.Logging;
 using Polly;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -14,17 +15,18 @@ namespace EventBusRabbitMQ
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<DefaultRabbitMqPersistentConnection> _logger;
-        private readonly int _retryCount;
+        private readonly int _retryCount = 5;
         IConnection _connection;
         bool _disposed;
 
-        object sync_root = new object();
+        readonly object _syncRoot = new object();
 
-        public DefaultRabbitMqPersistentConnection(IConnectionFactory connectionFactory, ILogger<DefaultRabbitMqPersistentConnection> logger, int retryCount = 5)
+        public DefaultRabbitMqPersistentConnection(RabbitMqConnectionProvider provider, ILogger<DefaultRabbitMqPersistentConnection> logger)
         {
-            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            var connection = provider.GetRabbitMqConnectionOption();
+            _connectionFactory = connection.ConnectionFactory ?? throw new ArgumentNullException(nameof(connection.ConnectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _retryCount = retryCount;
         }
 
         public bool IsConnected => _connection != null && _connection.IsOpen && !_disposed;
@@ -58,7 +60,7 @@ namespace EventBusRabbitMQ
         public bool TryConnect()
         {
             _logger.LogInformation("RabbitMQ Client is trying to connect");
-            lock (sync_root)
+            lock (_syncRoot)
             {
                 var policy = Policy.Handle<SocketException>()
                     .Or<BrokerUnreachableException>()

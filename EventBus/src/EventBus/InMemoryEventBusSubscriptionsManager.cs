@@ -2,19 +2,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventBus.Provider;
 
 namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
-        private readonly IOptions<SubscriptionsIntegrationEventOption> _options;
+        private readonly SubscriptionsIntegrationEventOption _option;
         private readonly Dictionary<string, List<Type>> _handlers;
         private readonly Dictionary<string, Type> _eventTypes;
         public event EventHandler<string> OnEventRemoved;
 
-        public InMemoryEventBusSubscriptionsManager(IOptions<SubscriptionsIntegrationEventOption> options)
+        public InMemoryEventBusSubscriptionsManager(SubscriptionsIntegrationEventOptionProvider provider)
         {
-            _options = options;
+            _option = provider?.GetSubscriptionsIntegrationEventOption();
             _handlers = new Dictionary<string, List<Type>>();
             _eventTypes = new Dictionary<string, Type>();
         }
@@ -112,7 +113,7 @@ namespace EventBus
         public string GetEventKey<T>()
         {
             var eventName = GetEventName<T>();
-            var eventTag = _options.Value.SubscriptionsIntegrationEvents.FirstOrDefault(p => typeof(T)==p.EventType)?.EventTag;
+            var eventTag = _option?.SubscriptionsIntegrationEvents.FirstOrDefault(p => typeof(T)==p.EventType)?.EventTag;
             var eventKey = string.IsNullOrWhiteSpace(eventTag) ? eventName : $"{eventTag}_{eventName}";
             return eventKey;
         }
