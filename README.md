@@ -5,7 +5,7 @@
 # 使用方式：
 ## Publish
 
-` 
+```
 services.AddEventBusRabbitMq(option =>
             {
             ///添加RabbitMq的连接
@@ -26,9 +26,9 @@ services.AddEventBusRabbitMq(option =>
                     new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
                 };
             });
-            `  
+  ``` 
 ## subscribe
-` 
+```
  services.AddEventBusRabbitMq(option =>
             {
               ///添加RabbitMq的连接
@@ -54,4 +54,4 @@ services.AddEventBusRabbitMq(option =>
                     .AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent), "publish");
                ;
             });
-` 
+``` 
