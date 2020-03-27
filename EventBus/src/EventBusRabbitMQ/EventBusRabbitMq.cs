@@ -25,8 +25,6 @@ namespace EventBusRabbitMQ
         private readonly IServiceProvider _serviceProvider;
         private readonly EventBusRabbitMqOption _option;
         private readonly IEventBusSubscriptionsManager _subsManager;
-        private readonly List<RabbitMqPublishOption> _rabbitMqPublishOptions;
-        private readonly List<RabbitMqSubscribeOption> _rabbitMqSubscribeOptions;
 
         private readonly int _retryCount = 5;
         private IModel _consumerChannel;
@@ -43,8 +41,6 @@ namespace EventBusRabbitMQ
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _option = option.Value;
-            _rabbitMqPublishOptions = _option.RabbitMqPublishOptions;
-            _rabbitMqSubscribeOptions = _option.RabbitMqSubscribeOptions;
             _consumerChannel = CreateConsumerChannel();
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
@@ -125,12 +121,13 @@ namespace EventBusRabbitMQ
 
         private RabbitMqPublishOption GetRabbitMqPublishOption(Type eventType)
         {
+            var rabbitMqPublishOptions = _option.RabbitMqPublishOptions;
             RabbitMqPublishOption option = null;
-            if (_rabbitMqPublishOptions != null &&
-                _rabbitMqPublishOptions.Count > 0 &&
-                _rabbitMqPublishOptions.Exists(p => p.EventType == eventType))
+            if (rabbitMqPublishOptions != null &&
+                rabbitMqPublishOptions.Count > 0 &&
+                rabbitMqPublishOptions.Exists(p => p.EventType == eventType))
             {
-                option = _rabbitMqPublishOptions
+                option = rabbitMqPublishOptions
                    .FirstOrDefault(p => p.EventType == eventType);
             }
             return option;
@@ -153,12 +150,13 @@ namespace EventBusRabbitMQ
 
         private RabbitMqSubscribeOption GetRabbitMqSubscribeProvider(Type eventType)
         {
+            var rabbitMqSubscribeOptions = _option.RabbitMqSubscribeOptions;
             RabbitMqSubscribeOption option = null;
-            if (_rabbitMqSubscribeOptions != null &&
-                _rabbitMqSubscribeOptions.Count > 0 &&
-                _rabbitMqSubscribeOptions.Exists(p => p.EventType == eventType))
+            if (rabbitMqSubscribeOptions != null &&
+                rabbitMqSubscribeOptions.Count > 0 &&
+                rabbitMqSubscribeOptions.Exists(p => p.EventType == eventType))
             {
-                option = _rabbitMqSubscribeOptions
+                option = rabbitMqSubscribeOptions
                    .FirstOrDefault(p => p.EventType == eventType);
             }
             return option;
