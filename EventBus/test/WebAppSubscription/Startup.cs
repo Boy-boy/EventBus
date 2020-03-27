@@ -30,13 +30,6 @@ namespace WebAppSubscription
             services.AddTransient<UserLocationUpdatedIntegrationEventHandler1>();
 
             services.AddEventBus()
-                .AddSubscriptionEventMappingTagOption(option =>
-                {
-                    option.AddEventMappingTagBuilder(builder =>
-                    {
-                        builder.AddEventMappingTag(typeof(UserLocationUpdatedIntegrationEvent), "publish");
-                    });
-                })
                 .AddRabbitMq(configure =>
                 {
                     configure.RabbitMqConnectionOption = new RabbitMqConnectionOption()

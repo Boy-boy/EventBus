@@ -1,6 +1,5 @@
-﻿using System;
-using EventBus.Provider;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace EventBus
 {
@@ -14,10 +13,13 @@ namespace EventBus
         /// <summary>The services being configured.</summary>
         public virtual IServiceCollection Services { get; }
 
-
-        public virtual EventBusBuilder AddSubscriptionEventMappingTagOption(Action<IntegrationEventSubscriptionEventMappingTagOption> option)
+        public virtual EventBusBuilder AddEventMappingTagHelper(Type evenType, string eventTag)
         {
-            this.Services.Configure(option);
+            Services.Configure<EventBusOptions>(option => option.AddEventMappingTag(builder =>
+            {
+                builder.EventType = evenType;
+                builder.EventTag = eventTag;
+            }));
             return this;
         }
     }
