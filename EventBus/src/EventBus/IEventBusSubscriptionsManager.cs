@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace EventBus
 {
+    /// <summary>
+    /// 消息订阅管理器
+    /// </summary>
     public interface IEventBusSubscriptionsManager
     {
         bool IsEmpty { get; }

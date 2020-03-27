@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using EventBus;
+﻿using EventBus;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace WebAppPublish.Controllers
 {
@@ -22,13 +19,9 @@ namespace WebAppPublish.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            //for (int i = 0; i < 100; i++)
-            //{
-            //    _eventBus.Publish(new UserLocationUpdatedIntegrationEvent(i.ToString()));
-            //}
             for (int i = 0; i < 100; i++)
             {
-                _eventBus.Publish(new WebAppPublish.Event.UserLocationUpdatedIntegrationEvent(i));
+                _eventBus.Publish(new Event.UserLocationUpdatedIntegrationEvent(i));
             }
             return new string[] { "value1", "value2" };
         }

@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using EventBus.Provider;
-using EventBusRabbitMQ.Provider;
+﻿using EventBusRabbitMQ.Options;
+using System.Collections.Generic;
 
 namespace EventBusRabbitMQ
 {
@@ -8,12 +7,11 @@ namespace EventBusRabbitMQ
     {
         public EventBusRabbitMqOption()
         {
-            SubscriptionsIntegrationEventOption=new SubscriptionsIntegrationEventOption();
             RabbitMqConnectionOption=new RabbitMqConnectionOption();
             RabbitMqPublishOptions=new List<RabbitMqPublishOption>();
             RabbitMqSubscribeOptions=new List<RabbitMqSubscribeOption>();
         }
-        public SubscriptionsIntegrationEventOption SubscriptionsIntegrationEventOption { get; set; }
+      
         public RabbitMqConnectionOption RabbitMqConnectionOption { get; set; }
         public List<RabbitMqPublishOption> RabbitMqPublishOptions { get; set; }
         public List<RabbitMqSubscribeOption> RabbitMqSubscribeOptions { get; set; }

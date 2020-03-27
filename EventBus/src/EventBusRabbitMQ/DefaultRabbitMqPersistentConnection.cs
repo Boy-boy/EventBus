@@ -1,5 +1,5 @@
-﻿using EventBusRabbitMQ.Provider;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Polly;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -14,6 +14,7 @@ namespace EventBusRabbitMQ
        : IRabbitMqPersistentConnection
     {
         private readonly IConnectionFactory _connectionFactory;
+        private readonly EventBusRabbitMqOption _option;
         private readonly ILogger<DefaultRabbitMqPersistentConnection> _logger;
         private readonly int _retryCount = 5;
         IConnection _connection;
@@ -21,10 +22,10 @@ namespace EventBusRabbitMQ
 
         readonly object _syncRoot = new object();
 
-        public DefaultRabbitMqPersistentConnection(RabbitMqConnectionProvider provider, ILogger<DefaultRabbitMqPersistentConnection> logger)
+        public DefaultRabbitMqPersistentConnection(IOptions<EventBusRabbitMqOption> option, ILogger<DefaultRabbitMqPersistentConnection> logger)
         {
-            provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            var connection = provider.GetRabbitMqConnectionOption();
+            _option = option.Value ;
+            var connection = _option.RabbitMqConnectionOption;
             _connectionFactory = connection.ConnectionFactory ?? throw new ArgumentNullException(nameof(connection.ConnectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

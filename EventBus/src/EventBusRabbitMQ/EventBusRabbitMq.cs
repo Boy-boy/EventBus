@@ -1,7 +1,8 @@
 ﻿using EventBus;
-using EventBusRabbitMQ.Provider;
+using EventBusRabbitMQ.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Polly;
 using RabbitMQ.Client;
@@ -22,6 +23,7 @@ namespace EventBusRabbitMQ
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly IServiceProvider _serviceProvider;
+        private readonly EventBusRabbitMqOption _option;
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly List<RabbitMqPublishOption> _rabbitMqPublishOptions;
         private readonly List<RabbitMqSubscribeOption> _rabbitMqSubscribeOptions;
@@ -34,17 +36,15 @@ namespace EventBusRabbitMQ
             IEventBusSubscriptionsManager subsManager,
             ILogger<EventBusRabbitMq> logger,
             IServiceProvider serviceProvider,
-            RabbitMqPublishProvider publishProvider,
-            RabbitMqSubscribeProvider subscribeProvider)
+            IOptions<EventBusRabbitMqOption> option)
         {
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            var publishProvider1 = publishProvider ?? throw new ArgumentNullException(nameof(publishProvider));
-            var subscribeProvider1 = subscribeProvider ?? throw new ArgumentNullException(nameof(subscribeProvider));
-            _rabbitMqPublishOptions = publishProvider1.GetRabbitMqPublishOptions();
-            _rabbitMqSubscribeOptions = subscribeProvider1.GetRabbitMqSubscribeOptions();
+            _option = option.Value;
+            _rabbitMqPublishOptions = _option.RabbitMqPublishOptions;
+            _rabbitMqSubscribeOptions = _option.RabbitMqSubscribeOptions;
             _consumerChannel = CreateConsumerChannel();
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }

@@ -8,14 +8,14 @@ namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
-        private readonly SubscriptionsIntegrationEventOption _option;
+        private readonly IIntegrationEventSubscriptionsEventMappingTagProvider _provider;
         private readonly Dictionary<string, List<Type>> _handlers;
         private readonly Dictionary<string, Type> _eventTypes;
         public event EventHandler<string> OnEventRemoved;
 
-        public InMemoryEventBusSubscriptionsManager(SubscriptionsIntegrationEventOptionProvider provider)
+        public InMemoryEventBusSubscriptionsManager(IIntegrationEventSubscriptionsEventMappingTagProvider provider)
         {
-            _option = provider?.GetSubscriptionsIntegrationEventOption();
+            _provider = provider;
             _handlers = new Dictionary<string, List<Type>>();
             _eventTypes = new Dictionary<string, Type>();
         }
@@ -113,7 +113,7 @@ namespace EventBus
         public string GetEventKey<T>()
         {
             var eventName = GetEventName<T>();
-            var eventTag = _option?.SubscriptionsIntegrationEvents.FirstOrDefault(p => typeof(T)==p.EventType)?.EventTag;
+            var eventTag = _provider.GetIntegrationEventSubscriptionEventMappingTagAsync(typeof(T)).Result?.EventTag;
             var eventKey = string.IsNullOrWhiteSpace(eventTag) ? eventName : $"{eventTag}_{eventName}";
             return eventKey;
         }

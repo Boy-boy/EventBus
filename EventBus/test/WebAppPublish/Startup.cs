@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using EventBusRabbitMQ;
+using EventBusRabbitMQ.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
-using EventBusRabbitMQ.Provider;
 using WebAppPublish.Event;
 
 namespace WebAppPublish
@@ -22,29 +22,30 @@ namespace WebAppPublish
 
         public IConfiguration Configuration { get; }
 
-      
+
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc(option => { option.EnableEndpointRouting = false; });
 
-            services.AddEventBusRabbitMq(option =>
-            {
-                option.RabbitMqConnectionOption = new RabbitMqConnectionOption()
+            services.AddEventBus()
+                .AddRabbitMq(configure =>
                 {
-                    ConnectionFactory = new ConnectionFactory()
+                    configure.RabbitMqConnectionOption = new RabbitMqConnectionOption()
                     {
-                        HostName = "127.0.0.1",
-                        VirtualHost = "/",
-                        DispatchConsumersAsync = true,
-                        UserName = "guest",
-                        Password = "guest"
-                    }
-                };
-                option.RabbitMqPublishOptions=new List<RabbitMqPublishOption>
-                {
-                    new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
-                };
-            });
+                        ConnectionFactory = new ConnectionFactory()
+                        {
+                            HostName = "127.0.0.1",
+                            VirtualHost = "/",
+                            DispatchConsumersAsync = true,
+                            UserName = "guest",
+                            Password = "guest"
+                        }
+                    };
+                    configure.RabbitMqPublishOptions = new List<RabbitMqPublishOption>
+                    {
+                        new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
+                    };
+                });
             var container = new ContainerBuilder();
             container.Populate(services);
             return new AutofacServiceProvider(container.Build());
