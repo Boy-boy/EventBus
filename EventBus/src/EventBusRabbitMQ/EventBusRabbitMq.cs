@@ -54,8 +54,7 @@ namespace EventBusRabbitMQ
 
             using (var channel = _persistentConnection.CreateModel())
             {
-                var eventType = _subsManager.GetEventTypeByName(eventKey);
-
+                var eventType = _subsManager.GetEventTypeByKey(eventKey);
                 var option = GetRabbitMqSubscribeProvider(eventType);
                 if (option == null)
                 {
@@ -235,7 +234,7 @@ namespace EventBusRabbitMQ
 
                 consumer.Received += Consumer_Received;
                 var option = GetRabbitMqSubscribeProvider(eventType);
-                BasicConsume(option == null ? _queueName : option?.QueueName);
+                BasicConsume(option == null ? _queueName : option.QueueName);
 
                 void BasicConsume(string queueName)
                 {
@@ -290,7 +289,7 @@ namespace EventBusRabbitMQ
                     {
                         var handler = serviceProvider.GetService(handlerType);
                         if (handler == null) continue;
-                        var eventType = _subsManager.GetEventTypeByName(eventKey);
+                        var eventType = _subsManager.GetEventTypeByKey(eventKey);
                         var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
                         var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
                         await Task.Yield();

@@ -9,6 +9,7 @@ namespace EventBus
     public interface IEventBusSubscriptionsManager
     {
         bool IsEmpty { get; }
+
         event EventHandler<string> OnEventRemoved;
         
         void AddSubscription<T, TH>()
@@ -20,12 +21,19 @@ namespace EventBus
             where T : IntegrationEvent;
         
         bool HasSubscriptionsForEvent<T>() where T : IntegrationEvent;
-        bool HasSubscriptionsForEvent(string eventName);
-        Type GetEventTypeByName(string eventName);
+
+        bool HasSubscriptionsForEvent(string eventKey);
+
+        Type GetEventTypeByKey(string eventKey);
+
         void Clear();
+
         IEnumerable<Type> GetHandlersForEvent<T>() where T : IntegrationEvent;
-        IEnumerable<Type> GetHandlersForEvent(string eventName);
+
+        IEnumerable<Type> GetHandlersForEvent(string eventKey);
+
         string GetEventKey<T>();
+
         string GetEventName<T>();
         
     }

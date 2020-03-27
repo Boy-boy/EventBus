@@ -1,15 +1,14 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using EventBus;
+using EventBusRabbitMQ;
+using EventBusRabbitMQ.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
-using EventBus.Provider;
-using EventBusRabbitMQ;
-using EventBusRabbitMQ.Options;
 using WebAppSubscription.IntegrationEvents.Events;
 using WebAppSubscription.IntegrationEvents.Handlers;
 
@@ -54,7 +53,7 @@ namespace WebAppSubscription
                     configure.RabbitMqSubscribeOptions = new List<RabbitMqSubscribeOption>
                     {
                         new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
-                            "UserLocationUpdatedIntegrationEvent", "UserLocationUpdatedIntegrationEvent")
+                            "UserLocationUpdatedIntegrationEventExchange", typeof(UserLocationUpdatedIntegrationEvent).Assembly.GetName().Name)
                     };
                 });
             var container = new ContainerBuilder();
@@ -66,7 +65,6 @@ namespace WebAppSubscription
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
-            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
             app.UseMvc();
         }
     }

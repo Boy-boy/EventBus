@@ -43,7 +43,7 @@ namespace WebAppPublish
                     };
                     configure.RabbitMqPublishOptions = new List<RabbitMqPublishOption>
                     {
-                        new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
+                        new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEventExchange")
                     };
                 });
             var container = new ContainerBuilder();
