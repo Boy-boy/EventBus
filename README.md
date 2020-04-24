@@ -20,11 +20,11 @@ appsettings.json文件配置rabbitmq链接信息,例如：
   services.AddEventBus()
                 .AddRabbitMq(configure =>
                 {
-                   //配置rabbitmq连接信息
+                   //<font face="微软雅黑">配置rabbitmq连接信息</font>
                     var connectionConfigure = new RabbitMqConnectionConfigure();
                     Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
                     configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
-                    //设置发布消息时使用的交换器（可不配置）
+                    //配置发布消息时使用的交换器（可不配置）
                         .ConfigRabbitMqPublishConfigures(new List<RabbitMqPublishConfigure>
                         {
                             new RabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
