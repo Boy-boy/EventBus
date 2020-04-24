@@ -2,23 +2,23 @@
 
 namespace EventBus
 {
-    public class IntegrationEventSubscriptionEventMappingTagBuilder
+    public class IntegrationEventSubscriptionBuildEventTagBuilder
     {
 
-        public IntegrationEventSubscriptionEventMappingTagBuilder() { }
+        public IntegrationEventSubscriptionBuildEventTagBuilder() { }
 
         public Type EventType { get; set; }
         public string EventTag { get; set; }
 
-        public IntegrationEventSubscriptionEventMappingTag Build()
+        public IntegrationEventSubscriptionBuildEventTag Build()
         {
-            return new IntegrationEventSubscriptionEventMappingTag(EventType, EventTag);
+            return new IntegrationEventSubscriptionBuildEventTag(EventType, EventTag);
         }
     }
 
-    public class IntegrationEventSubscriptionEventMappingTag
+    public class IntegrationEventSubscriptionBuildEventTag
     {
-        public IntegrationEventSubscriptionEventMappingTag(Type eventType, string eventTag)
+        public IntegrationEventSubscriptionBuildEventTag(Type eventType, string eventTag)
         {
             EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
             EventTag = eventTag ?? throw new ArgumentNullException(nameof(eventTag));

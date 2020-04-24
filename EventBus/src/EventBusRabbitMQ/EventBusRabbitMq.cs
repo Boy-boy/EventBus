@@ -9,7 +9,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -19,16 +18,15 @@ namespace EventBusRabbitMQ
 {
     public class EventBusRabbitMq : IEventBus, IDisposable
     {
-        const string BROKER_NAME = "event_bus";
+        const string EXCHANGE_NAME = "event_bus_rabbitmq_default_exchange";
+        const string QUEUE_NAME = "event_bus_rabbitmq_default_queue";
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly EventBusRabbitMqOption _option;
         private readonly IEventBusSubscriptionsManager _subsManager;
-
         private readonly int _retryCount = 5;
         private IModel _consumerChannel;
-        private string _queueName;
 
         public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
             IEventBusSubscriptionsManager subsManager,
@@ -58,11 +56,11 @@ namespace EventBusRabbitMQ
                 var option = GetRabbitMqSubscribeProvider(eventType);
                 if (option == null)
                 {
-                    QueueUnbind(BROKER_NAME, _queueName);
+                    QueueUnbind(EXCHANGE_NAME, QUEUE_NAME);
                 }
                 else
                 {
-                    QueueUnbind(option?.ExchangeName, option?.QueueName);
+                    QueueUnbind(option.ExchangeName, option.QueueName);
                 }
                 void QueueUnbind(string exchangeName, string queueName)
                 {
@@ -71,7 +69,6 @@ namespace EventBusRabbitMQ
                         routingKey: eventKey);
                 }
                 if (!_subsManager.IsEmpty) return;
-                _queueName = string.Empty;
                 _consumerChannel.Close();
             }
         }
@@ -98,7 +95,7 @@ namespace EventBusRabbitMQ
                 _logger.LogTrace("Declaring RabbitMQ exchange to publish event: {EventId}", @event.Id);
                 var message = JsonConvert.SerializeObject(@event);
                 var body = Encoding.UTF8.GetBytes(message);
-                var exchangeName = GetRabbitMqPublishOption(@event.GetType())?.ExchangeName ?? BROKER_NAME;
+                var exchangeName = GetRabbitMqPublishOption(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
                 model.ExchangeDeclare(exchange: exchangeName, type: "direct");
                 policy.Execute(() =>
@@ -138,7 +135,6 @@ namespace EventBusRabbitMQ
         {
             var eventName = _subsManager.GetEventName<T>();
             var eventKey = _subsManager.GetEventKey<T>();
-            _queueName = typeof(T).Assembly.GetName().Name;
             DoInternalSubscription(eventKey, typeof(T));
 
             _logger.LogInformation("Subscribing to event {EventName} with {EventHandler}", eventName, typeof(TH).Name);
@@ -177,7 +173,6 @@ namespace EventBusRabbitMQ
 
                 _consumerChannel.Dispose();
                 _consumerChannel = CreateConsumerChannel();
-                StartBasicConsume();
             };
 
             return channel;
@@ -196,7 +191,7 @@ namespace EventBusRabbitMQ
                 var option = GetRabbitMqSubscribeProvider(eventType);
                 if (option == null)
                 {
-                    QueueBind(BROKER_NAME, _queueName);
+                    QueueBind(EXCHANGE_NAME, QUEUE_NAME);
                 }
                 else
                 {
@@ -234,7 +229,7 @@ namespace EventBusRabbitMQ
 
                 consumer.Received += Consumer_Received;
                 var option = GetRabbitMqSubscribeProvider(eventType);
-                BasicConsume(option == null ? _queueName : option.QueueName);
+                BasicConsume(option == null ? QUEUE_NAME : option.QueueName);
 
                 void BasicConsume(string queueName)
                 {

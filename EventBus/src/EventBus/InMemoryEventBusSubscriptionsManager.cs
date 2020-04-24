@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Options;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,12 +6,12 @@ namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
-        private readonly IIntegrationEventSubscriptionEventMappingTagProvider _provider;
+        private readonly IIntegrationEventSubscriptionBuildEventTagProvider _provider;
         private readonly Dictionary<string, List<Type>> _handlers;
         private readonly Dictionary<string, Type> _eventTypes;
         public event EventHandler<string> OnEventRemoved;
 
-        public InMemoryEventBusSubscriptionsManager(IIntegrationEventSubscriptionEventMappingTagProvider provider)
+        public InMemoryEventBusSubscriptionsManager(IIntegrationEventSubscriptionBuildEventTagProvider provider)
         {
             _provider = provider;
             _handlers = new Dictionary<string, List<Type>>();

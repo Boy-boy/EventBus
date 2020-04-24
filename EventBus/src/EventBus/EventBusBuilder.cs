@@ -10,7 +10,6 @@ namespace EventBus
             this.Services = services;
         }
 
-        /// <summary>The services being configured.</summary>
         public virtual IServiceCollection Services { get; }
 
         public virtual EventBusBuilder AddEventMappingTagHelper(Type evenType, string eventTag)
