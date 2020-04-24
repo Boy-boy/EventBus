@@ -143,6 +143,15 @@ namespace EventBusRabbitMQ
             StartBasicConsume(typeof(T));
         }
 
+        public void Unsubscribe<T, TH>()
+            where T : IntegrationEvent
+            where TH : IIntegrationEventHandler<T>
+        {
+            var eventName = _subsManager.GetEventName<T>();
+            _logger.LogInformation("Unsubscribing from event {EventName}", eventName);
+            _subsManager.RemoveSubscription<T, TH>();
+        }
+
         private RabbitMqSubscribeOption GetRabbitMqSubscribeProvider(Type eventType)
         {
             var rabbitMqSubscribeOptions = _option.RabbitMqSubscribeOptions;
