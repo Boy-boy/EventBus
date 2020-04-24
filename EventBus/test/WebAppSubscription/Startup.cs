@@ -32,16 +32,11 @@ namespace WebAppSubscription
             services.AddEventBus()
                 .AddRabbitMq(configure =>
                 {
+                    var connectionFactory = new ConnectionFactory();
+                    Configuration.Bind(typeof(ConnectionFactory).Name, connectionFactory);
                     configure.RabbitMqConnectionOption = new RabbitMqConnectionOption()
                     {
-                        ConnectionFactory = new ConnectionFactory()
-                        {
-                            HostName = "127.0.0.1",
-                            VirtualHost = "/",
-                            DispatchConsumersAsync = true,
-                            UserName = "guest",
-                            Password = "guest"
-                        }
+                        ConnectionFactory = connectionFactory
                     };
                     configure.RabbitMqSubscribeOptions = new List<RabbitMqSubscribeOption>
                     {
