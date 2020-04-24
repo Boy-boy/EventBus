@@ -1,12 +1,11 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using EventBusRabbitMQ;
-using EventBusRabbitMQ.Options;
+using EventBusRabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using WebAppPublish.Event;
@@ -30,22 +29,17 @@ namespace WebAppPublish
             services.AddEventBus()
                 .AddRabbitMq(configure =>
                 {
-                    configure.RabbitMqConnectionOption = new RabbitMqConnectionOption()
-                    {
-                        ConnectionFactory = new ConnectionFactory()
+                    var connectionConfigure = new RabbitMqConnectionConfigure();
+                    Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
+                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
+                        .ConfigRabbitMqPublishConfigures(new List<RabbitMqPublishConfigure>
                         {
-                            HostName = "127.0.0.1",
-                            VirtualHost = "/",
-                            DispatchConsumersAsync = true,
-                            UserName = "guest",
-                            Password = "guest"
-                        }
-                    };
-                    configure.RabbitMqPublishOptions = new List<RabbitMqPublishOption>
-                    {
-                        new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEventExchange")
-                    };
+                            new RabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
+                                "UserLocationUpdatedIntegrationEventExchange")
+                        });
                 });
+
+
             var container = new ContainerBuilder();
             container.Populate(services);
             return new AutofacServiceProvider(container.Build());

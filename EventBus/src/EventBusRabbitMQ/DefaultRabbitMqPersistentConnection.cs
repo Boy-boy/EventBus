@@ -14,7 +14,6 @@ namespace EventBusRabbitMQ
        : IRabbitMqPersistentConnection
     {
         private readonly IConnectionFactory _connectionFactory;
-        private readonly EventBusRabbitMqOption _option;
         private readonly ILogger<DefaultRabbitMqPersistentConnection> _logger;
         private readonly int _retryCount = 5;
         IConnection _connection;
@@ -24,8 +23,7 @@ namespace EventBusRabbitMQ
 
         public DefaultRabbitMqPersistentConnection(IOptions<EventBusRabbitMqOption> option, ILogger<DefaultRabbitMqPersistentConnection> logger)
         {
-            _option = option.Value ;
-            var connection = _option.RabbitMqConnectionOption;
+            var connection = option.Value.RabbitMqConnectionConfigures;
             _connectionFactory = connection.ConnectionFactory ?? throw new ArgumentNullException(nameof(connection.ConnectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

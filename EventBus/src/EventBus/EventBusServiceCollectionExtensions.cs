@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class EventBusServiceCollectionExtensions
     {
-        public static EventBusBuilder AddEventBus(this IServiceCollection services,Action<EventBusOptions> configureOptions=null)
+        public static EventBusBuilder AddEventBus(this IServiceCollection services)
         {
             if (services == null)
             {
@@ -14,8 +14,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             services.TryAddSingleton<IIntegrationEventSubscriptionBuildEventTagProvider, IntegrationEventSubscriptionBuildEventTagProvider>();
             services.TryAddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
-            if (configureOptions != null)
-                services.Configure(configureOptions);
             var builder = new EventBusBuilder(services);
             return builder;
         }

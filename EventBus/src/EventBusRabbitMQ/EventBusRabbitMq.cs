@@ -1,5 +1,5 @@
 ﻿using EventBus;
-using EventBusRabbitMQ.Options;
+using EventBusRabbitMQ.Configures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,12 +34,11 @@ namespace EventBusRabbitMQ
             IServiceProvider serviceProvider,
             IOptions<EventBusRabbitMqOption> option)
         {
+            _option = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _option = option.Value;
-            _consumerChannel = CreateConsumerChannel();
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
 
@@ -49,18 +48,17 @@ namespace EventBusRabbitMQ
             {
                 _persistentConnection.TryConnect();
             }
-
             using (var channel = _persistentConnection.CreateModel())
             {
                 var eventType = _subsManager.GetEventTypeByKey(eventKey);
-                var option = GetRabbitMqSubscribeProvider(eventType);
+                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
                 if (option == null)
                 {
                     QueueUnbind(EXCHANGE_NAME, QUEUE_NAME);
                 }
                 else
                 {
-                    QueueUnbind(option.ExchangeName, option.QueueName);
+                    QueueUnbind(option.ExchangeName ?? EXCHANGE_NAME, option.QueueName ?? QUEUE_NAME);
                 }
                 void QueueUnbind(string exchangeName, string queueName)
                 {
@@ -95,7 +93,7 @@ namespace EventBusRabbitMQ
                 _logger.LogTrace("Declaring RabbitMQ exchange to publish event: {EventId}", @event.Id);
                 var message = JsonConvert.SerializeObject(@event);
                 var body = Encoding.UTF8.GetBytes(message);
-                var exchangeName = GetRabbitMqPublishOption(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
+                var exchangeName = _option.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
                 model.ExchangeDeclare(exchange: exchangeName, type: "direct");
                 policy.Execute(() =>
@@ -113,20 +111,6 @@ namespace EventBusRabbitMQ
                         body: body);
                 });
             }
-        }
-
-        private RabbitMqPublishOption GetRabbitMqPublishOption(Type eventType)
-        {
-            var rabbitMqPublishOptions = _option.RabbitMqPublishOptions;
-            RabbitMqPublishOption option = null;
-            if (rabbitMqPublishOptions != null &&
-                rabbitMqPublishOptions.Count > 0 &&
-                rabbitMqPublishOptions.Exists(p => p.EventType == eventType))
-            {
-                option = rabbitMqPublishOptions
-                   .FirstOrDefault(p => p.EventType == eventType);
-            }
-            return option;
         }
 
         public void Subscribe<T, TH>()
@@ -152,21 +136,7 @@ namespace EventBusRabbitMQ
             _subsManager.RemoveSubscription<T, TH>();
         }
 
-        private RabbitMqSubscribeOption GetRabbitMqSubscribeProvider(Type eventType)
-        {
-            var rabbitMqSubscribeOptions = _option.RabbitMqSubscribeOptions;
-            RabbitMqSubscribeOption option = null;
-            if (rabbitMqSubscribeOptions != null &&
-                rabbitMqSubscribeOptions.Count > 0 &&
-                rabbitMqSubscribeOptions.Exists(p => p.EventType == eventType))
-            {
-                option = rabbitMqSubscribeOptions
-                   .FirstOrDefault(p => p.EventType == eventType);
-            }
-            return option;
-        }
-
-        private IModel CreateConsumerChannel()
+        private IModel CreateConsumerChannel(Type eventType)
         {
             if (!_persistentConnection.IsConnected)
             {
@@ -181,7 +151,8 @@ namespace EventBusRabbitMQ
                 _logger.LogWarning(ea.Exception, "Recreating RabbitMQ consumer channel");
 
                 _consumerChannel.Dispose();
-                _consumerChannel = CreateConsumerChannel();
+                _consumerChannel = CreateConsumerChannel(eventType);
+                StartBasicConsume(eventType);
             };
 
             return channel;
@@ -197,14 +168,14 @@ namespace EventBusRabbitMQ
             }
             using (var channel = _persistentConnection.CreateModel())
             {
-                var option = GetRabbitMqSubscribeProvider(eventType);
+                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
                 if (option == null)
                 {
                     QueueBind(EXCHANGE_NAME, QUEUE_NAME);
                 }
                 else
                 {
-                    QueueBind(option.ExchangeName, option.QueueName);
+                    QueueBind(option.ExchangeName ?? EXCHANGE_NAME, option.QueueName ?? QUEUE_NAME);
                 }
                 void QueueBind(string exchangeName, string queueName)
                 {
@@ -228,17 +199,19 @@ namespace EventBusRabbitMQ
             _subsManager.Clear();
         }
 
-        private void StartBasicConsume(Type eventType = default)
+        private void StartBasicConsume(Type eventType)
         {
             _logger.LogTrace("Starting RabbitMQ basic consume");
 
+            if (_consumerChannel == null)
+                _consumerChannel = CreateConsumerChannel(eventType);
             if (_consumerChannel != null)
             {
                 var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
 
                 consumer.Received += Consumer_Received;
-                var option = GetRabbitMqSubscribeProvider(eventType);
-                BasicConsume(option == null ? QUEUE_NAME : option.QueueName);
+                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
+                BasicConsume(option == null ? QUEUE_NAME : option.QueueName ?? QUEUE_NAME);
 
                 void BasicConsume(string queueName)
                 {

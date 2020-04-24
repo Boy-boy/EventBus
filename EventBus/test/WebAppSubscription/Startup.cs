@@ -2,11 +2,10 @@
 using Autofac.Extensions.DependencyInjection;
 using EventBus;
 using EventBusRabbitMQ;
-using EventBusRabbitMQ.Options;
+using EventBusRabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using WebAppSubscription.IntegrationEvents.Events;
@@ -32,18 +31,17 @@ namespace WebAppSubscription
             services.AddEventBus()
                 .AddRabbitMq(configure =>
                 {
-                    var connectionFactory = new ConnectionFactory();
-                    Configuration.Bind(typeof(ConnectionFactory).Name, connectionFactory);
-                    configure.RabbitMqConnectionOption = new RabbitMqConnectionOption()
-                    {
-                        ConnectionFactory = connectionFactory
-                    };
-                    configure.RabbitMqSubscribeOptions = new List<RabbitMqSubscribeOption>
-                    {
-                        new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
-                            "UserLocationUpdatedIntegrationEventExchange", typeof(UserLocationUpdatedIntegrationEvent).Assembly.GetName().Name)
-                    };
+                    var connectionConfigure = new RabbitMqConnectionConfigure();
+                    Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
+                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
+                        .ConfigRabbitMqSubscribeConfigures(new List<RabbitMqSubscribeConfigure>()
+                        {
+                            new RabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent), 
+                                "UserLocationUpdatedIntegrationEventExchange",eventTag:typeof(UserLocationUpdatedIntegrationEvent).Name)
+                        });
                 });
+
+
             var container = new ContainerBuilder();
             container.Populate(services);
             return new AutofacServiceProvider(container.Build());

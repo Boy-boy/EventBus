@@ -9,7 +9,7 @@ namespace EventBus
 
         public IEnumerable<IntegrationEventSubscriptionBuildEventTagBuilder> EventTagBuilders => _eventTagBuilders;
 
-        public void AddEventMappingTag(Action<IntegrationEventSubscriptionBuildEventTagBuilder> configureBuilder)
+        public void AddBuildEventTag(Action<IntegrationEventSubscriptionBuildEventTagBuilder> configureBuilder)
         {
             if (configureBuilder == null)
                 throw new ArgumentNullException(nameof(configureBuilder));
