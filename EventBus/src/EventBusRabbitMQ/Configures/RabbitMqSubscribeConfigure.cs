@@ -5,21 +5,26 @@ namespace EventBusRabbitMQ.Configures
 {
     public class RabbitMqSubscribeConfigureBuilder
     {
-        public IList<RabbitMqSubscribeConfigure> RabbitMqSubscribeConfigures { get; set; } = new List<RabbitMqSubscribeConfigure>();
+        private List<RabbitMqSubscribeConfigure> RabbitMqSubscribeConfigures { get;} = new List<RabbitMqSubscribeConfigure>();
 
         public RabbitMqSubscribeConfigureBuilder AddRabbitMqSubscribeConfigure(Type eventType, string eventTag = default, string exchangeName = default, string queueName = default)
         {
             RabbitMqSubscribeConfigures.Add(new RabbitMqSubscribeConfigure(eventType, eventTag,exchangeName, queueName));
             return this;
         }
+
+        public List<RabbitMqSubscribeConfigure> Build()
+        {
+            return RabbitMqSubscribeConfigures;
+        }
     }
 
     public class RabbitMqSubscribeConfigure
     {
         public Type EventType { get; set; }
+        public string EventTag { get; set; }
         public string QueueName { get; set; }
         public string ExchangeName { get; set; }
-        public string EventTag { get; set; }
         public RabbitMqSubscribeConfigure() { }
         public RabbitMqSubscribeConfigure(Type eventType, string eventTag = default, string exchangeName=default, string queueName=default)
         {

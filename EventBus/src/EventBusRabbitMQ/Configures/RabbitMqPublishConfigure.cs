@@ -6,12 +6,17 @@ namespace EventBusRabbitMQ.Configures
 
     public class RabbitMqPublishConfigureBuilder
     {
-        public List<RabbitMqPublishConfigure> RabbitMqPublishConfigure { get;} = new List<RabbitMqPublishConfigure>();
+        private List<RabbitMqPublishConfigure> RabbitMqPublishConfigures { get;} = new List<RabbitMqPublishConfigure>();
 
         public RabbitMqPublishConfigureBuilder AddRabbitMqPublishConfigure(Type eventType, string exchangeName)
         {
-            RabbitMqPublishConfigure.Add(new RabbitMqPublishConfigure(eventType, exchangeName));
+            RabbitMqPublishConfigures.Add(new RabbitMqPublishConfigure(eventType, exchangeName));
             return this;
+        }
+
+        public List<RabbitMqPublishConfigure> Build()
+        {
+            return RabbitMqPublishConfigures;
         }
     }
 

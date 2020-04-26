@@ -26,17 +26,37 @@ namespace EventBus
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
         {
-            var eventName = GetEventName<T>();
-            var eventKey = GetEventKey<T>();
-            DoAddSubscription(typeof(TH), eventKey, eventName);
+            DoAddSubscriptionHandlers<T, TH>();
+            DoAddSubscriptionEventTypes<T>();
+        }
 
-            if (!_eventTypes.ContainsKey(eventKey))
+        private void DoAddSubscriptionEventTypes<T>()
+            where T : IntegrationEvent
+        {
+            var eventKey = GetEventKey<T>();
+            if (_eventTypes.ContainsKey(eventKey))
+            {
+                var eventType = typeof(T);
+                //duplicate event key
+                if (_eventTypes[eventKey] != eventType)
+                {
+                    throw new ArgumentException(
+                        $"Event Key {eventKey} already exists,please make sure the event key is unique");
+                }
+            }
+            else
             {
                 _eventTypes.Add(eventKey, typeof(T));
             }
         }
-        private void DoAddSubscription(Type handlerType, string eventKey, string eventName)
+
+        private void DoAddSubscriptionHandlers<T, TH>()
+            where T : IntegrationEvent
+            where TH : IIntegrationEventHandler<T>
         {
+            var eventName = GetEventName<T>();
+            var eventKey = GetEventKey<T>();
+            var handlerType = typeof(TH);
             if (!HasSubscriptionsForEvent(eventKey))
             {
                 _handlers.Add(eventKey, new List<Type>());

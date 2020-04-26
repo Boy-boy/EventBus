@@ -21,7 +21,7 @@ namespace EventBus
         }
         public  Task<IntegrationEventSubscriptionBuildEventTag> GetEventMappingTagAsync(Type evenType)
         {
-            return Task.FromResult(EventTags.FirstOrDefault(p => p.EventType == evenType));
+            return Task.FromResult(EventTags.LastOrDefault(p => p.EventType == evenType));
         }
 
         public  Task<IEnumerable<IntegrationEventSubscriptionBuildEventTag>> GetAllEventMappingTagsAsync()

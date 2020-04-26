@@ -23,7 +23,7 @@ namespace EventBusRabbitMQ
                 throw new ArgumentNullException(nameof(builder));
             var rabbitMqPublishConfigureBuilder = new RabbitMqPublishConfigureBuilder();
             builder(rabbitMqPublishConfigureBuilder);
-            RabbitMqPublishConfigures.AddRange(rabbitMqPublishConfigureBuilder.RabbitMqPublishConfigure);
+            RabbitMqPublishConfigures.AddRange(rabbitMqPublishConfigureBuilder.Build());
             return this;
         }
 
@@ -33,7 +33,7 @@ namespace EventBusRabbitMQ
                 throw new ArgumentNullException(nameof(builder));
             var rabbitMqPublishConfigureBuilder = new RabbitMqSubscribeConfigureBuilder();
             builder(rabbitMqPublishConfigureBuilder);
-            RabbitMqSubscribeConfigures.AddRange(rabbitMqPublishConfigureBuilder.RabbitMqSubscribeConfigures);
+            RabbitMqSubscribeConfigures.AddRange(rabbitMqPublishConfigureBuilder.Build());
             return this;
         }
 
@@ -53,7 +53,7 @@ namespace EventBusRabbitMQ
             if (RabbitMqPublishConfigures != null &&
                 RabbitMqPublishConfigures.Exists(p => p.EventType == evenType))
             {
-                config = RabbitMqPublishConfigures.FirstOrDefault(p => p.EventType == evenType);
+                config = RabbitMqPublishConfigures.LastOrDefault(p => p.EventType == evenType);
             }
             return config;
         }
@@ -69,7 +69,7 @@ namespace EventBusRabbitMQ
             if (RabbitMqSubscribeConfigures != null &&
                 RabbitMqSubscribeConfigures.Exists(p => p.EventType == evenType))
             {
-                config = RabbitMqSubscribeConfigures.FirstOrDefault(p => p.EventType == evenType);
+                config = RabbitMqSubscribeConfigures.LastOrDefault(p => p.EventType == evenType);
             }
             return config;
         }

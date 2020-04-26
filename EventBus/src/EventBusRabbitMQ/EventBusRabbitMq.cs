@@ -1,5 +1,4 @@
 ﻿using EventBus;
-using EventBusRabbitMQ.Configures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -9,7 +8,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +20,7 @@ namespace EventBusRabbitMQ
         const string QUEUE_NAME = "event_bus_rabbitmq_default_queue";
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly ILogger<EventBusRabbitMq> _logger;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly EventBusRabbitMqOptions _options;
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly int _retryCount = 5;
@@ -31,14 +29,14 @@ namespace EventBusRabbitMQ
         public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
             IEventBusSubscriptionsManager subsManager,
             ILogger<EventBusRabbitMq> logger,
-            IServiceProvider serviceProvider,
+            IServiceScopeFactory serviceScopeFactory,
             IOptions<EventBusRabbitMqOptions> option)
         {
             _options = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _serviceScopeFactory = serviceScopeFactory?? throw new ArgumentNullException(nameof(serviceScopeFactory));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
 
@@ -95,7 +93,7 @@ namespace EventBusRabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
                 var exchangeName = _options.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
-                model.ExchangeDeclare(exchange: exchangeName, type: "direct");
+                model.ExchangeDeclare(exchange: exchangeName, type: "direct",durable:true);
                 policy.Execute(() =>
                 {
                     var properties = model.CreateBasicProperties();
@@ -179,7 +177,7 @@ namespace EventBusRabbitMQ
                 }
                 void QueueBind(string exchangeName, string queueName)
                 {
-                    channel.ExchangeDeclare(exchange: exchangeName, type: "direct");
+                    channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                     channel.QueueDeclare(queue: queueName,
                         durable: true,
                         exclusive: false,
@@ -258,13 +256,13 @@ namespace EventBusRabbitMQ
 
             if (_subsManager.HasSubscriptionsForEvent(eventKey))
             {
-                using (var scope = _serviceProvider.CreateScope())
+                using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     var handlerTypes = _subsManager.GetHandlersForEvent(eventKey);
                     var serviceProvider = scope.ServiceProvider;
                     foreach (var handlerType in handlerTypes)
                     {
-                        var handler = serviceProvider.GetService(handlerType);
+                        var handler = serviceProvider.GetRequiredService(handlerType);
                         if (handler == null) continue;
                         var eventType = _subsManager.GetEventTypeByKey(eventKey);
                         var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
