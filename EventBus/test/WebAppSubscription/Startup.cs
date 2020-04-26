@@ -29,15 +29,16 @@ namespace WebAppSubscription
             services.AddTransient<UserLocationUpdatedIntegrationEventHandler1>();
 
             services.AddEventBus()
-                .AddRabbitMq(configure =>
+                .AddRabbitMq(option =>
                 {
                     var connectionConfigure = new RabbitMqConnectionConfigure();
                     Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
-                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
-                        .ConfigRabbitMqSubscribeConfigures(new List<RabbitMqSubscribeConfigure>()
+                    option.ConfigRabbitMqConnectionConfigures(connectionConfigure)
+                        .ConfigRabbitMqSubscribeConfigures(builder =>
                         {
-                            new RabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent), 
-                                "UserLocationUpdatedIntegrationEventExchange",eventTag:typeof(UserLocationUpdatedIntegrationEvent).Name)
+                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),
+                                typeof(UserLocationUpdatedIntegrationEvent).Name,
+                                "UserLocationUpdatedIntegrationEventExchange");
                         });
                 });
 

@@ -23,7 +23,7 @@ namespace EventBusRabbitMQ
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly EventBusRabbitMqOption _option;
+        private readonly EventBusRabbitMqOptions _options;
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly int _retryCount = 5;
         private IModel _consumerChannel;
@@ -32,9 +32,9 @@ namespace EventBusRabbitMQ
             IEventBusSubscriptionsManager subsManager,
             ILogger<EventBusRabbitMq> logger,
             IServiceProvider serviceProvider,
-            IOptions<EventBusRabbitMqOption> option)
+            IOptions<EventBusRabbitMqOptions> option)
         {
-            _option = option.Value;
+            _options = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
@@ -51,7 +51,7 @@ namespace EventBusRabbitMQ
             using (var channel = _persistentConnection.CreateModel())
             {
                 var eventType = _subsManager.GetEventTypeByKey(eventKey);
-                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
+                var option = _options.GetRabbitMqSubscribeConfigure(eventType);
                 if (option == null)
                 {
                     QueueUnbind(EXCHANGE_NAME, QUEUE_NAME);
@@ -93,7 +93,7 @@ namespace EventBusRabbitMQ
                 _logger.LogTrace("Declaring RabbitMQ exchange to publish event: {EventId}", @event.Id);
                 var message = JsonConvert.SerializeObject(@event);
                 var body = Encoding.UTF8.GetBytes(message);
-                var exchangeName = _option.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
+                var exchangeName = _options.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
                 model.ExchangeDeclare(exchange: exchangeName, type: "direct");
                 policy.Execute(() =>
@@ -168,7 +168,7 @@ namespace EventBusRabbitMQ
             }
             using (var channel = _persistentConnection.CreateModel())
             {
-                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
+                var option = _options.GetRabbitMqSubscribeConfigure(eventType);
                 if (option == null)
                 {
                     QueueBind(EXCHANGE_NAME, QUEUE_NAME);
@@ -210,7 +210,7 @@ namespace EventBusRabbitMQ
                 var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
 
                 consumer.Received += Consumer_Received;
-                var option = _option.GetRabbitMqSubscribeConfigure(eventType);
+                var option = _options.GetRabbitMqSubscribeConfigure(eventType);
                 BasicConsume(option == null ? QUEUE_NAME : option.QueueName ?? QUEUE_NAME);
 
                 void BasicConsume(string queueName)

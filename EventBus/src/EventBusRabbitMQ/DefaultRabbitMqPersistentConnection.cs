@@ -21,9 +21,9 @@ namespace EventBusRabbitMQ
 
         readonly object _syncRoot = new object();
 
-        public DefaultRabbitMqPersistentConnection(IOptions<EventBusRabbitMqOption> option, ILogger<DefaultRabbitMqPersistentConnection> logger)
+        public DefaultRabbitMqPersistentConnection(IOptions<EventBusRabbitMqOptions> option, ILogger<DefaultRabbitMqPersistentConnection> logger)
         {
-            var connection = option.Value.RabbitMqConnectionConfigures;
+            var connection = option.Value.GetRabbitMqConnectionConfigure();
             _connectionFactory = connection.ConnectionFactory ?? throw new ArgumentNullException(nameof(connection.ConnectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

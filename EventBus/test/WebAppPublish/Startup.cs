@@ -32,10 +32,10 @@ namespace WebAppPublish
                     var connectionConfigure = new RabbitMqConnectionConfigure();
                     Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
                     configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
-                        .ConfigRabbitMqPublishConfigures(new List<RabbitMqPublishConfigure>
+                        .ConfigRabbitMqPublishConfigures(builder=>
                         {
-                            new RabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                "UserLocationUpdatedIntegrationEventExchange")
+                            builder.AddRabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
+                                "UserLocationUpdatedIntegrationEventExchange");
                         });
                 });
 
