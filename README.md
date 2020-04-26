@@ -1,57 +1,53 @@
 # EventBus
 使用RabbitMq实现EventBus
 
+appsettings.json文件配置rabbitmq链接信息,例如：
+```
+"RabbitMqConnectionConfigure": {
+    "hostName": "127.0.0.1",
+    "userName": "guest",
+    "password": "guest",
+    "port": "-1",
+    "dispatchConsumersAsync": true,
+    "virtualHost": "/"
+  }
+``` 
 
 # 使用方式：
 ## Publish
 
 ```
-services.AddEventBusRabbitMq(option =>
-            {
-            ///添加RabbitMq的连接
-                option.RabbitMqConnectionOption = new RabbitMqConnectionOption()
+ services.AddEventBus()
+                .AddRabbitMq(configure =>
                 {
-                    ConnectionFactory = new ConnectionFactory()
-                    {
-                        HostName = "127.0.0.1",
-                        VirtualHost = "/",
-                        DispatchConsumersAsync = true,
-                        UserName = "guest",
-                        Password = "guest"
-                    }
-                };
-                ///指定rabbitMq的ExchangeName
-                option.RabbitMqPublishOptions=new List<RabbitMqPublishOption>
-                {
-                    new RabbitMqPublishOption(typeof(UserLocationUpdatedIntegrationEvent), "UserLocationUpdatedIntegrationEvent")
-                };
-            });
+ //配置rabbitmq连接信息
+                    var connectionConfigure = new RabbitMqConnectionConfigure();
+                    Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
+                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
+ //配置发布消息时使用的交换器（可不配置）
+                        .ConfigRabbitMqPublishConfigures(builder=>
+                        {
+                            builder.AddRabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
+                                "UserLocationUpdatedIntegrationEventExchange");
+                        });
+                });
+
   ``` 
 ## subscribe
 ```
- services.AddEventBusRabbitMq(option =>
-            {
-              ///添加RabbitMq的连接
-                option.RabbitMqConnectionOption = new RabbitMqConnectionOption()
+  services.AddEventBus()
+                .AddRabbitMq(configure =>
                 {
-                    ConnectionFactory = new ConnectionFactory()
-                    {
-                        HostName = "127.0.0.1",
-                        VirtualHost = "/",
-                        DispatchConsumersAsync = true,
-                        UserName = "guest",
-                        Password = "guest"
-                    }
-                };
-                  ///指定rabbitMq的ExchangeName和QueueName
-                option.RabbitMqSubscribeOptions = new List<RabbitMqSubscribeOption>
-                {
-                    new RabbitMqSubscribeOption(typeof(UserLocationUpdatedIntegrationEvent),
-                        "UserLocationUpdatedIntegrationEvent", "UserLocationUpdatedIntegrationEvent")
-                };
-                  ///添加IntegrationEvent标签
-                option.SubscriptionsIntegrationEventOption = new SubscriptionsIntegrationEventOption()
-                    .AddSubscriptionsIntegrationEventOption(typeof(UserLocationUpdatedIntegrationEvent), "publish");
-               ;
-            });
+ //配置rabbitmq连接信息
+                    var connectionConfigure = new RabbitMqConnectionConfigure();
+                    Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
+                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
+//配置订阅消息时使用的交换器，队列和消息标签（可不配置，若配置:交换器名称和消息标签需要与发布的消息保持一致）
+                       .ConfigRabbitMqSubscribeConfigures(builder =>
+                        {
+                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),
+                                typeof(UserLocationUpdatedIntegrationEvent).Name,
+                                "UserLocationUpdatedIntegrationEventExchange");
+                        });
+                });
 ``` 
