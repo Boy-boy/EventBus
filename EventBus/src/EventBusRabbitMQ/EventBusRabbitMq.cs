@@ -98,7 +98,7 @@ namespace EventBusRabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
                 var exchangeName = _options.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
-                model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
+                model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true,autoDelete:true);
                 policy.Execute(() =>
                 {
                     var properties = model.CreateBasicProperties();
@@ -147,7 +147,7 @@ namespace EventBusRabbitMQ
                 var configure = _options.GetRabbitMqSubscribeConfigure(typeof(T));
                 var exchangeName = configure?.ExchangeName ?? EXCHANGE_NAME;
                 var queueName = configure?.QueueName ?? QUEUE_NAME;
-                channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
+                channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true,autoDelete:true);
                 channel.QueueDeclare(queue: queueName,
                     durable: true,
                     exclusive: false,
@@ -232,6 +232,7 @@ namespace EventBusRabbitMQ
                 var consumerChannel = _consumerChannels[queueName];
                 var consumer = new AsyncEventingBasicConsumer(consumerChannel);
                 consumer.Received += Consumer_Received;
+              
                 consumerChannel.BasicConsume(
                     queue: queueName,
                     autoAck: false,
@@ -247,7 +248,7 @@ namespace EventBusRabbitMQ
         {
             var eventKey = eventArgs.RoutingKey;
             var message = Encoding.UTF8.GetString(eventArgs.Body);
-
+            var asyncEventingBasicConsumer = sender as AsyncEventingBasicConsumer;
             try
             {
                 if (message.ToLowerInvariant().Contains("throw-fake-exception"))
@@ -265,7 +266,7 @@ namespace EventBusRabbitMQ
             // Even on exception we take the message off the queue.
             // in a REAL WORLD app this should be handled with a Dead Letter Exchange (DLX). 
             // For more information see: https://www.rabbitmq.com/dlx.html
-            //_consumerChannel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+            asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: false);
         }
 
         private async Task ProcessEvent(string eventKey, string message)
