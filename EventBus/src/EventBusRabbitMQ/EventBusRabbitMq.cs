@@ -98,7 +98,7 @@ namespace EventBusRabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
                 var exchangeName = _options.GetRabbitMqPublishConfigure(@event.GetType())?.ExchangeName ?? EXCHANGE_NAME;
                 var model = channel;
-                model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true,autoDelete:true);
+                model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                 policy.Execute(() =>
                 {
                     var properties = model.CreateBasicProperties();
@@ -147,7 +147,7 @@ namespace EventBusRabbitMQ
                 var configure = _options.GetRabbitMqSubscribeConfigure(typeof(T));
                 var exchangeName = configure?.ExchangeName ?? EXCHANGE_NAME;
                 var queueName = configure?.QueueName ?? QUEUE_NAME;
-                channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true,autoDelete:true);
+                channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                 channel.QueueDeclare(queue: queueName,
                     durable: true,
                     exclusive: false,
