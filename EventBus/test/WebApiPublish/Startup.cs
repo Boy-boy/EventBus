@@ -1,16 +1,13 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using EventBusRabbitMQ;
 using EventBusRabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using WebAppPublish.Event;
+using Microsoft.Extensions.Hosting;
+using WebApiPublish.Event;
 
-namespace WebAppPublish
+namespace WebApiPublish
 {
     public class Startup
     {
@@ -21,39 +18,40 @@ namespace WebAppPublish
 
         public IConfiguration Configuration { get; }
 
-
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(option => { option.EnableEndpointRouting = false; });
-
+            services.AddControllers();
             services.AddEventBus()
                 .AddRabbitMq(configure =>
                 {
                     var connectionConfigure = new RabbitMqConnectionConfigure();
                     Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
                     configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
-                        .ConfigRabbitMqPublishConfigures(builder=>
+                        .ConfigRabbitMqPublishConfigures(builder =>
                         {
                             builder.AddRabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                "UserLocationUpdatedIntegrationEventExchange");
+                                    "WebAppPublishExchange")
+                                .AddRabbitMqPublishConfigure(typeof(UserEvent),
+                                    "WebAppPublishExchange");
                         });
                 });
-
-
-            var container = new ContainerBuilder();
-            container.Populate(services);
-            return new AutofacServiceProvider(container.Build());
         }
 
-
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseMvc();
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }

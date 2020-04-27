@@ -21,7 +21,7 @@ namespace EventBus
         public IntegrationEventSubscriptionBuildEventTag(Type eventType, string eventTag)
         {
             EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
-            EventTag = eventTag ?? throw new ArgumentNullException(nameof(eventTag));
+            EventTag = eventTag;
         }
         public Type EventType { get; set; }
         public string EventTag { get; set; }
