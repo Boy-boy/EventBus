@@ -11,7 +11,7 @@ namespace WebAppSubscription.IntegrationEvents.Handlers
 
         public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
         {
-            await Task.Yield();
+            await Task.Delay(0);
         }
 
     }
@@ -22,7 +22,7 @@ namespace WebAppSubscription.IntegrationEvents.Handlers
 
         public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
         {
-            await Task.Yield();
+            await Task.Delay(0);
         }
 
     }

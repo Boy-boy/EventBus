@@ -232,7 +232,7 @@ namespace EventBusRabbitMQ
                 var consumerChannel = _consumerChannels[queueName];
                 var consumer = new AsyncEventingBasicConsumer(consumerChannel);
                 consumer.Received += Consumer_Received;
-              
+                consumerChannel.BasicQos(0,50,false);
                 consumerChannel.BasicConsume(
                     queue: queueName,
                     autoAck: false,
@@ -266,7 +266,7 @@ namespace EventBusRabbitMQ
             // Even on exception we take the message off the queue.
             // in a REAL WORLD app this should be handled with a Dead Letter Exchange (DLX). 
             // For more information see: https://www.rabbitmq.com/dlx.html
-            asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: false);
+            asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: true);
         }
 
         private async Task ProcessEvent(string eventKey, string message)
