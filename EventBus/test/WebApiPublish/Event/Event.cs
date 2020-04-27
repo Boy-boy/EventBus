@@ -8,12 +8,15 @@ namespace WebApiPublish.Event
 {
     public class UserLocationUpdatedIntegrationEvent : IntegrationEvent
     {
-        public UserLocationUpdatedIntegrationEvent(int age)
+        public UserLocationUpdatedIntegrationEvent(int age, string play)
         {
             Age = age;
+            Play = play;
             EventTag = typeof(UserLocationUpdatedIntegrationEvent).Name;
         }
         public int Age { get; set; }
+
+        public string Play { get; set; }
     }
 
     public class UserEvent : IntegrationEvent

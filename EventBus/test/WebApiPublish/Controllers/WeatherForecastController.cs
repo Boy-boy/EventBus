@@ -31,8 +31,8 @@ namespace WebApiPublish.Controllers
         {
             for (var i = 0; i < 100; i++)
             {
-                _eventBus.Publish(new Event.UserLocationUpdatedIntegrationEvent(i));
-                _eventBus.Publish(new Event.UserEvent(i, $"My name is {i}"));
+                _eventBus.Publish(new Event.UserLocationUpdatedIntegrationEvent(i, $"My play is {i}{i}{i}{i}{i}{i}{i}{i}"));
+                _eventBus.Publish(new Event.UserEvent(i, $"My name is {i}{i}{i}{i}{i}{i}{i}{i}"));
             }
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast

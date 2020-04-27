@@ -15,7 +15,7 @@ namespace WebApiSubscription.IntegrationEvents.Handlers
         public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
         {
             Console.WriteLine($"UserLocationUpdatedIntegrationEventHandler，信息Id={@event.Id}");
-            await Task.Delay(200);
+            await Task.Delay(50);
         }
 
     }
@@ -25,7 +25,7 @@ namespace WebApiSubscription.IntegrationEvents.Handlers
         public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
         {
             Console.WriteLine($"UserLocationUpdatedIntegrationEventHandler1，信息Id={@event.Id}");
-            await Task.Delay(200);
+            await Task.Delay(50);
         }
     }
 
@@ -34,8 +34,8 @@ namespace WebApiSubscription.IntegrationEvents.Handlers
     {
         public async Task Handle(UserEvent @event)
         {
-            Console.WriteLine($"UserEventHandler，信息Id={@event.Id}");
-            await Task.Delay(300);
+            Console.WriteLine($"UserEventHandler，信息Id={@event.Name}");
+            await Task.Delay(50);
         }
 
     }
