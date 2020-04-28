@@ -118,24 +118,21 @@ namespace EventBusRabbitMQ
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
         {
-            DoInternalSubscription<T>();
+            var eventKey = _subsManager.GetEventKey<T>();
+            var (exchangeName, queueName) = GetRabbitMqExchangeNameAndQueueName(typeof(T));
+            DoInternalSubscription(exchangeName, queueName, eventKey);
+            DoAddQueueBindingKeys(queueName, eventKey);
 
             var eventName = _subsManager.GetEventName<T>();
-            var eventKey = _subsManager.GetEventKey<T>();
             _logger.LogInformation("Subscribing to event {EventName} with {EventHandler}", eventName, typeof(TH).Name);
 
             _subsManager.AddSubscription<T, TH>();
-
-            var (_, queueName) = GetRabbitMqExchangeNameAndQueueName(typeof(T));
-            DoAddQueueBindingEventTypes(queueName, eventKey);
             StartBasicConsume(queueName);
         }
 
-        private void DoInternalSubscription<T>()
-            where T : IntegrationEvent
+        private void DoInternalSubscription(string exchangeName, string queueName, string bindingKey)
         {
-            var eventKey = _subsManager.GetEventKey<T>();
-            var containsKey = _subsManager.HasSubscriptionsForEvent(eventKey);
+            var containsKey = _subsManager.HasSubscriptionsForEvent(bindingKey);
             if (containsKey) return;
             if (!_persistentConnection.IsConnected)
             {
@@ -143,7 +140,6 @@ namespace EventBusRabbitMQ
             }
             using (var channel = _persistentConnection.CreateModel())
             {
-                var (exchangeName, queueName) = GetRabbitMqExchangeNameAndQueueName(typeof(T));
                 channel.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                 channel.QueueDeclare(queue: queueName,
                     durable: true,
@@ -152,11 +148,11 @@ namespace EventBusRabbitMQ
                     arguments: null);
                 channel.QueueBind(queue: queueName,
                     exchange: exchangeName,
-                    routingKey: eventKey);
+                    routingKey: bindingKey);
             }
         }
 
-        private void DoAddQueueBindingEventTypes(string queueName,string eventKey)
+        private void DoAddQueueBindingKeys(string queueName, string eventKey)
         {
             if (!_queueBindingKeys.ContainsKey(queueName))
             {
@@ -169,6 +165,7 @@ namespace EventBusRabbitMQ
         }
         #endregion
 
+        #region Unsubscribe
         public void Unsubscribe<T, TH>()
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
@@ -177,6 +174,8 @@ namespace EventBusRabbitMQ
             _logger.LogInformation("Unsubscribing from event {EventName}", eventName);
             _subsManager.RemoveSubscription<T, TH>();
         }
+        #endregion
+
 
         public void Dispose()
         {
