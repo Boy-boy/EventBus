@@ -2,7 +2,7 @@
 
 namespace EventBus
 {
-    public interface IEventBus:IDisposable
+    public interface IEventBus
     {
         void Publish(IntegrationEvent @event);
 
