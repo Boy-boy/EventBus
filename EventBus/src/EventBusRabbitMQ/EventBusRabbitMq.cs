@@ -202,7 +202,7 @@ namespace EventBusRabbitMQ
                 _logger.LogWarning(ea.Exception, "Recreating RabbitMQ consumer channel");
                 if (_consumerChannels.ContainsKey(queueName))
                 {
-                    _consumerChannels[queueName].Dispose();
+                    _consumerChannels[queueName]?.Dispose();
                     _consumerChannels[queueName] = CreateConsumerChannel(eventType);
                 }
                 StartBasicConsume(eventType);
@@ -215,7 +215,7 @@ namespace EventBusRabbitMQ
 
         public void Dispose()
         {
-            _consumerChannels.ToList().ForEach(p => p.Value.Dispose());
+            _consumerChannels.ToList().ForEach(p => p.Value?.Dispose());
 
             _subsManager.Clear();
         }
