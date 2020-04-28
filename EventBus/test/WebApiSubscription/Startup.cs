@@ -54,7 +54,7 @@ namespace WebApiSubscription
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
             hostApplicationLifetime.ApplicationStopping.Register(() =>
             {
-                eventBus.Dispose();
+               // eventBus.Dispose();
             });
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
