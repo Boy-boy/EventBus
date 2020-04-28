@@ -137,5 +137,11 @@ namespace EventBus
             var eventKey = string.IsNullOrWhiteSpace(eventTag) ? eventName : $"{eventTag}_{eventName}";
             return eventKey;
         }
+
+        public void Dispose()
+        {
+            _handlers?.Clear();
+            _eventTypes?.Clear();
+        }
     }
 }

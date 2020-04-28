@@ -6,7 +6,7 @@ namespace EventBus
     /// <summary>
     /// 消息订阅管理器
     /// </summary>
-    public interface IEventBusSubscriptionsManager
+    public interface IEventBusSubscriptionsManager:IDisposable
     {
         bool IsEmpty { get; }
 

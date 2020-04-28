@@ -211,13 +211,11 @@ namespace EventBusRabbitMQ
             return channel;
         }
 
-     
-
         public void Dispose()
         {
             _consumerChannels.ToList().ForEach(p => p.Value?.Dispose());
-
-            _subsManager.Clear();
+            _persistentConnection.Dispose();
+            _subsManager.Dispose();
         }
 
         private void StartBasicConsume(Type eventType)

@@ -1,6 +1,8 @@
-﻿namespace EventBus
+﻿using System;
+
+namespace EventBus
 {
-    public interface IEventBus
+    public interface IEventBus:IDisposable
     {
         void Publish(IntegrationEvent @event);
 

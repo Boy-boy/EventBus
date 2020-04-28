@@ -45,13 +45,17 @@ namespace WebApiSubscription
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IHostApplicationLifetime hostApplicationLifetime)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+            hostApplicationLifetime.ApplicationStopping.Register(() =>
+            {
+                eventBus.Dispose();
+            });
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
             eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
             eventBus.Subscribe<UserEvent, UserEventHandler>();
