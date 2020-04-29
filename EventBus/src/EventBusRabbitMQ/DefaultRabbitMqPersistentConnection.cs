@@ -18,6 +18,7 @@ namespace EventBusRabbitMQ
         private readonly int _retryCount = 5;
         IConnection _connection;
         bool _disposed;
+      
 
         readonly object _syncRoot = new object();
 

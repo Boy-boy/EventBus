@@ -179,9 +179,6 @@ namespace EventBusRabbitMQ
 
         public void Dispose()
         {
-            _consumerChannels?.ToList().ForEach(p => p.Value?.Dispose());
-            _consumerChannels?.Clear();
-            _queueBindingKeys?.Clear();
             _persistentConnection?.Dispose();
             _subsManager?.Dispose();
         }
@@ -206,6 +203,11 @@ namespace EventBusRabbitMQ
             var channel = _persistentConnection.CreateModel();
             channel.CallbackException += (sender, ea) =>
             {
+                if (!_persistentConnection.IsConnected)
+                {
+                    _consumerChannels[queueName]?.Dispose();
+                    return;
+                }
                 _logger.LogWarning(ea.Exception, "Recreating RabbitMQ consumer channel");
                 if (_consumerChannels.ContainsKey(queueName))
                 {
@@ -227,7 +229,7 @@ namespace EventBusRabbitMQ
                 var consumerChannel = _consumerChannels[queueName];
                 var consumer = new AsyncEventingBasicConsumer(consumerChannel);
                 consumer.Received += Consumer_Received;
-                consumerChannel.BasicQos(0, 50, false);
+                consumerChannel.BasicQos(0, 20, false);
                 consumerChannel.BasicConsume(
                     queue: queueName,
                     autoAck: false,
@@ -261,7 +263,7 @@ namespace EventBusRabbitMQ
             // Even on exception we take the message off the queue.
             // in a REAL WORLD app this should be handled with a Dead Letter Exchange (DLX). 
             // For more information see: https://www.rabbitmq.com/dlx.html
-            asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: true);
+            asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: false);
         }
 
         private async Task ProcessEvent(string eventKey, string message)
