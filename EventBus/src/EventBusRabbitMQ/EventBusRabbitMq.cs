@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventBusRabbitMQ
@@ -28,6 +29,7 @@ namespace EventBusRabbitMQ
         private readonly Dictionary<string, IModel> _consumerChannels;
         private readonly Dictionary<string, List<string>> _queueBindingKeys;
         private readonly int _retryCount = 5;
+        private Timer _timer;
 
 
         public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
@@ -128,6 +130,8 @@ namespace EventBusRabbitMQ
 
             _subsManager.AddSubscription<T, TH>();
             StartBasicConsume(queueName);
+
+            TrySetCustomerChannelTimer();
         }
 
         private void DoInternalSubscription(string exchangeName, string queueName, string bindingKey)
@@ -177,10 +181,34 @@ namespace EventBusRabbitMQ
         #endregion
 
 
+        private void TrySetCustomerChannelTimer()
+        {
+            if (!_persistentConnection.IsConnected) return;
+            if (_timer == null)
+            {
+                _timer = new Timer(sender =>
+                {
+                    if (!_persistentConnection.IsConnected) return;
+                    var consumerChannelsCopy = _consumerChannels
+                        .ToDictionary(p=>p.Key,p=>p.Value );
+                    foreach (var keyValuePair in consumerChannelsCopy)
+                    {
+                        if (keyValuePair.Value != null && keyValuePair.Value.IsOpen) continue;
+                        _consumerChannels.Remove(keyValuePair.Key);
+                        StartBasicConsume(keyValuePair.Key);
+                    }
+                }, this, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20));
+            }
+        }
+
         public void Dispose()
         {
             _persistentConnection?.Dispose();
             _subsManager?.Dispose();
+            if (_timer == null)
+                return;
+            _timer.Dispose();
+            _timer = null;
         }
 
         private string GetRabbitMqPublishExchangeName(Type eventType)

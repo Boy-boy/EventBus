@@ -14,7 +14,6 @@ namespace EventBusRabbitMQ.Configures
 
         public string VirtualHost { get; set; }
 
-        public bool DispatchConsumersAsync { get; set; }
 
         public ConnectionFactory ConnectionFactory
         {
@@ -26,7 +25,7 @@ namespace EventBusRabbitMQ.Configures
                     Port = Port,
                     UserName = UserName,
                     Password = Password,
-                    DispatchConsumersAsync=DispatchConsumersAsync
+                    DispatchConsumersAsync=true
                 };
                 if (!string.IsNullOrWhiteSpace(this.VirtualHost))
                     connectionFactory.VirtualHost = this.VirtualHost;
