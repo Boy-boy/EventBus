@@ -18,7 +18,7 @@ namespace EventBusRabbitMQ
         private readonly int _retryCount = 5;
         IConnection _connection;
         bool _disposed;
-      
+
 
         readonly object _syncRoot = new object();
 
@@ -72,8 +72,9 @@ namespace EventBusRabbitMQ
 
                 policy.Execute(() =>
                 {
-                    _connection = _connectionFactory
-                          .CreateConnection();
+                    if (!IsConnected)
+                        _connection = _connectionFactory
+                              .CreateConnection();
                 });
 
                 if (IsConnected)

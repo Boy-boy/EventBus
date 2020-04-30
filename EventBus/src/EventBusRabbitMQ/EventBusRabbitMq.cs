@@ -55,7 +55,7 @@ namespace EventBusRabbitMQ
             using (var channel = _persistentConnection.CreateModel())
             {
                 var eventType = _subsManager.GetEventTypeByKey(eventKey);
-                var (exchangeName, queueName) = GetRabbitMqExchangeNameAndQueueName(eventType);
+                var (exchangeName, queueName) = GetRabbitMqSubscribeExchangeNameAndQueueName(eventType);
                 channel.QueueUnbind(queue: queueName,
                     exchange: exchangeName,
                     routingKey: eventKey);
@@ -92,7 +92,7 @@ namespace EventBusRabbitMQ
                 _logger.LogTrace("Declaring RabbitMQ exchange to publish event: {EventId}", @event.Id);
                 var message = JsonConvert.SerializeObject(@event);
                 var body = Encoding.UTF8.GetBytes(message);
-                var (exchangeName, _) = GetRabbitMqExchangeNameAndQueueName(@event.GetType());
+                var exchangeName = GetRabbitMqPublishExchangeName(@event.GetType());
                 var model = channel;
                 model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                 policy.Execute(() =>
@@ -119,7 +119,7 @@ namespace EventBusRabbitMQ
             where TH : IIntegrationEventHandler<T>
         {
             var eventKey = _subsManager.GetEventKey<T>();
-            var (exchangeName, queueName) = GetRabbitMqExchangeNameAndQueueName(typeof(T));
+            var (exchangeName, queueName) = GetRabbitMqSubscribeExchangeNameAndQueueName(typeof(T));
             DoInternalSubscription(exchangeName, queueName, eventKey);
             DoAddQueueBindingKeys(queueName, eventKey);
 
@@ -183,7 +183,14 @@ namespace EventBusRabbitMQ
             _subsManager?.Dispose();
         }
 
-        private (string exchangeName, string queueName) GetRabbitMqExchangeNameAndQueueName(Type eventType)
+        private string GetRabbitMqPublishExchangeName(Type eventType)
+        {
+            var configure = _options.GetRabbitMqPublishConfigure(eventType);
+            var exchangeName = configure?.ExchangeName ?? EXCHANGE_NAME;
+            return exchangeName;
+        }
+
+        private (string exchangeName, string queueName) GetRabbitMqSubscribeExchangeNameAndQueueName(Type eventType)
         {
             var configure = _options.GetRabbitMqSubscribeConfigure(eventType);
             var exchangeName = configure?.ExchangeName ?? EXCHANGE_NAME;
@@ -201,22 +208,25 @@ namespace EventBusRabbitMQ
             _logger.LogTrace("Creating RabbitMQ consumer channel");
 
             var channel = _persistentConnection.CreateModel();
-            channel.CallbackException += (sender, ea) =>
+            channel.CallbackException += ConsumerChannelCallbackException;
+            return channel;
+            void ConsumerChannelCallbackException(object sender, CallbackExceptionEventArgs args)
             {
+                _logger.LogWarning(args.Exception, "Recreating RabbitMQ consumer channel");
                 if (!_persistentConnection.IsConnected)
                 {
-                    _consumerChannels[queueName]?.Dispose();
+                    if (!_consumerChannels.ContainsKey(queueName)) return;
+                    _consumerChannels[queueName].Dispose();
+                    _consumerChannels[queueName].CallbackException -= ConsumerChannelCallbackException;
                     return;
                 }
-                _logger.LogWarning(ea.Exception, "Recreating RabbitMQ consumer channel");
                 if (_consumerChannels.ContainsKey(queueName))
                 {
                     _consumerChannels[queueName]?.Dispose();
                     _consumerChannels[queueName] = CreateConsumerChannel(queueName);
                 }
                 StartBasicConsume(queueName);
-            };
-            return channel;
+            }
         }
 
         private void StartBasicConsume(string queueName)
