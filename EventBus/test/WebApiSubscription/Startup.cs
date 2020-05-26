@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using EventBus;
 using EventBusRabbitMQ;
 using EventBusRabbitMQ.Configures;
@@ -24,10 +26,9 @@ namespace WebApiSubscription
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddTransient<UserLocationUpdatedIntegrationEventHandler>();
-            services.AddTransient<UserLocationUpdatedIntegrationEventHandler1>();
-            services.AddTransient<UserEventHandler>();
             services.AddEventBus()
+                .AddEventHandler<UserEvent, UserEventHandler>()
+                .AddEventHandlers<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler, UserLocationUpdatedIntegrationEventHandler1>()
                 .AddRabbitMq(option =>
                 {
                     var connectionConfigure = new RabbitMqConnectionConfigure();
@@ -45,28 +46,27 @@ namespace WebApiSubscription
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IHostApplicationLifetime hostApplicationLifetime)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime hostApplicationLifetime)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
-            hostApplicationLifetime.ApplicationStopping.Register(() =>
-            {
-               // eventBus.Dispose();
-            });
-            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
-            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
-            eventBus.Subscribe<UserEvent, UserEventHandler>();
+            ConfigureEventBus(app);
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+        }
+
+        public void ConfigureEventBus(IApplicationBuilder app)
+        {
+            var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
+            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
+            eventBus.Subscribe<UserEvent, UserEventHandler>();
         }
     }
 }
