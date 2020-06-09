@@ -8,7 +8,6 @@ appsettings.json文件配置rabbitmq链接信息,例如：
     "userName": "guest",
     "password": "guest",
     "port": "-1",
-    "dispatchConsumersAsync": true,
     "virtualHost": "/"
   }
 ``` 
@@ -36,6 +35,7 @@ appsettings.json文件配置rabbitmq链接信息,例如：
 ## subscribe
 ```
   services.AddEventBus()
+                .AddEventHandler<TEvent, TEventHandler>()
                 .AddRabbitMq(configure =>
                 {
  //配置rabbitmq连接信息
