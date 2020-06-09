@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using EventBus;
 using EventBusRabbitMQ;
 using EventBusRabbitMQ.Configures;
