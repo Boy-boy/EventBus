@@ -5,17 +5,27 @@ namespace EventBus
 {
     public class EventBusOptions
     {
-        private readonly IList<IntegrationEventSubscriptionBuildEventTagBuilder> _eventTagBuilders = new List<IntegrationEventSubscriptionBuildEventTagBuilder>();
+        public Dictionary<string, Type> EventTypeMapping { get; } = new Dictionary<string, Type>();
 
-        public IEnumerable<IntegrationEventSubscriptionBuildEventTagBuilder> EventTagBuilders => _eventTagBuilders;
-
-        public void AddBuildEventTag(Action<IntegrationEventSubscriptionBuildEventTagBuilder> configureBuilder)
+        public void AddEventTypeMapping(Type evenType, string eventTag)
         {
-            if (configureBuilder == null)
-                throw new ArgumentNullException(nameof(configureBuilder));
-            var authenticationSchemeBuilder = new IntegrationEventSubscriptionBuildEventTagBuilder();
-            configureBuilder(authenticationSchemeBuilder);
-            _eventTagBuilders.Add(authenticationSchemeBuilder);
+            if (evenType == null)
+                throw new ArgumentNullException(nameof(evenType));
+            if (string.IsNullOrEmpty(eventTag))
+                throw new ArgumentNullException(nameof(eventTag));
+            if (EventTypeMapping.ContainsKey(eventTag))
+            {
+                if (EventTypeMapping[eventTag] != evenType)
+                {
+                    throw new ArgumentException(
+                        $"Event Tag {eventTag} already exists,please make sure the event key is unique");
+                }
+            }
+            else
+            {
+                EventTypeMapping.Add(eventTag, evenType);
+            }
+
         }
     }
 }

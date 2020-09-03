@@ -1,6 +1,7 @@
 ﻿using EventBus;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
+using EventBus.Abstraction;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -12,8 +13,9 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 throw new ArgumentNullException(nameof(services));
             }
-            services.TryAddSingleton<IIntegrationEventSubscriptionBuildEventTagProvider, IntegrationEventSubscriptionBuildEventTagProvider>();
             services.TryAddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
+            services.TryAddSingleton<IEventHandlersProvider, EventHandlersProvider>();
+            services.TryAddSingleton<IEventTypeProvider, EventTypeProvider>();
             var builder = new EventBusBuilder(services);
             return builder;
         }
@@ -21,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where THandler : class, IIntegrationEventHandler<TEvent>
             where TEvent : IntegrationEvent
         {
-            eventBusBuilder.Services.AddTransient<THandler>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler>();
             return eventBusBuilder;
         }
         public static EventBusBuilder AddEventHandlers<TEvent, THandler0, THandler1>(this EventBusBuilder eventBusBuilder)
@@ -29,8 +31,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where THandler1 : class, IIntegrationEventHandler<TEvent>
             where TEvent : IntegrationEvent
         {
-            eventBusBuilder.Services.AddTransient<THandler0>();
-            eventBusBuilder.Services.AddTransient<THandler1>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler0>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler1>();
             return eventBusBuilder;
         }
         public static EventBusBuilder AddEventHandlers<TEvent, THandler0, THandler1, THandler2>(this EventBusBuilder eventBusBuilder)
@@ -39,9 +41,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where THandler2 : class, IIntegrationEventHandler<TEvent>
             where TEvent : IntegrationEvent
         {
-            eventBusBuilder.Services.AddTransient<THandler0>();
-            eventBusBuilder.Services.AddTransient<THandler1>();
-            eventBusBuilder.Services.AddTransient<THandler2>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler0>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler1>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler2>();
             return eventBusBuilder;
         }
         public static EventBusBuilder AddEventHandlers<TEvent, THandler0, THandler1, THandler2, THandler3>(this EventBusBuilder eventBusBuilder)
@@ -51,10 +53,10 @@ namespace Microsoft.Extensions.DependencyInjection
             where THandler3 : class, IIntegrationEventHandler<TEvent>
             where TEvent : IntegrationEvent
         {
-            eventBusBuilder.Services.AddTransient<THandler0>();
-            eventBusBuilder.Services.AddTransient<THandler1>();
-            eventBusBuilder.Services.AddTransient<THandler2>();
-            eventBusBuilder.Services.AddTransient<THandler3>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler0>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler1>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler2>();
+            eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler3>();
             return eventBusBuilder;
         }
     }

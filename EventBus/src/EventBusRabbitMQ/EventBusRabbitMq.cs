@@ -1,5 +1,4 @@
 ﻿using EventBus;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -14,6 +13,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using EventBus.Abstraction;
 
 namespace EventBusRabbitMQ
 {
@@ -23,11 +23,9 @@ namespace EventBusRabbitMQ
         const string QUEUE_NAME = "event_bus_rabbitmq_default_queue";
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly IEventBusSubscriptionsManager _subsManager;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly EventBusRabbitMqOptions _options;
         private readonly Dictionary<string, IModel> _consumerChannels;
-        private readonly Dictionary<string, List<string>> _queueBindingKeys;
         private readonly int _retryCount = 5;
         private Timer _timer;
 
@@ -35,40 +33,13 @@ namespace EventBusRabbitMQ
         public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
             IEventBusSubscriptionsManager subsManager,
             ILogger<EventBusRabbitMq> logger,
-            IServiceScopeFactory serviceScopeFactory,
             IOptions<EventBusRabbitMqOptions> option)
         {
             _options = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
-            _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
             _consumerChannels = new Dictionary<string, IModel>();
-            _queueBindingKeys = new Dictionary<string, List<string>>();
-        }
-
-        private void SubsManager_OnEventRemoved(object sender, string eventKey)
-        {
-            if (!_persistentConnection.IsConnected)
-            {
-                _persistentConnection.TryConnect();
-            }
-            using (var channel = _persistentConnection.CreateModel())
-            {
-                var eventType = _subsManager.GetEventTypeByKey(eventKey);
-                var (exchangeName, queueName) = GetRabbitMqSubscribeExchangeNameAndQueueName(eventType);
-                channel.QueueUnbind(queue: queueName,
-                    exchange: exchangeName,
-                    routingKey: eventKey);
-                if (!_queueBindingKeys.ContainsKey(queueName)) return;
-                _queueBindingKeys[queueName].Remove(eventKey);
-                if (_queueBindingKeys[queueName].Any()) return;
-                _queueBindingKeys.Remove(queueName);
-                if (!_consumerChannels.ContainsKey(queueName)) return;
-                _consumerChannels[queueName]?.Close();
-                _consumerChannels.Remove(queueName);
-            }
         }
 
         #region Publish
@@ -86,7 +57,7 @@ namespace EventBusRabbitMQ
                 });
 
             var eventName = @event.GetType().Name;
-            var routingKey = string.IsNullOrWhiteSpace(@event.EventTag) ? eventName : $"{@event.EventTag}_{eventName}";
+            var routingKey = @event.GetType().FullName;
             _logger.LogTrace("Creating RabbitMQ channel to publish event: {EventId} ({EventName})", @event.Id, eventName);
 
             using (var channel = _persistentConnection.CreateModel())
@@ -120,24 +91,15 @@ namespace EventBusRabbitMQ
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>
         {
-            var eventKey = _subsManager.GetEventKey<T>();
+            var routingKey = typeof(T).FullName;
             var (exchangeName, queueName) = GetRabbitMqSubscribeExchangeNameAndQueueName(typeof(T));
-            DoInternalSubscription(exchangeName, queueName, eventKey);
-            DoAddQueueBindingKeys(queueName, eventKey);
-
-            var eventName = _subsManager.GetEventName<T>();
-            _logger.LogInformation("Subscribing to event {EventName} with {EventHandler}", eventName, typeof(TH).Name);
-
-            _subsManager.AddSubscription<T, TH>();
+            DoInternalSubscription(exchangeName, queueName, routingKey);
+            _logger.LogInformation("Subscribing to event {EventName} with {EventHandler}", typeof(T).Name, typeof(TH).Name);
             StartBasicConsume(queueName);
-
             TrySetCustomerChannelTimer();
         }
-
-        private void DoInternalSubscription(string exchangeName, string queueName, string bindingKey)
+        private void DoInternalSubscription(string exchangeName, string queueName, string routingKey)
         {
-            var containsKey = _subsManager.HasSubscriptionsForEvent(bindingKey);
-            if (containsKey) return;
             if (!_persistentConnection.IsConnected)
             {
                 _persistentConnection.TryConnect();
@@ -152,34 +114,10 @@ namespace EventBusRabbitMQ
                     arguments: null);
                 channel.QueueBind(queue: queueName,
                     exchange: exchangeName,
-                    routingKey: bindingKey);
-            }
-        }
-
-        private void DoAddQueueBindingKeys(string queueName, string eventKey)
-        {
-            if (!_queueBindingKeys.ContainsKey(queueName))
-            {
-                _queueBindingKeys[queueName] = new List<string>();
-            }
-            if (_queueBindingKeys[queueName].All(s => s != eventKey))
-            {
-                _queueBindingKeys[queueName].Add(eventKey);
+                    routingKey: routingKey);
             }
         }
         #endregion
-
-        #region Unsubscribe
-        public void Unsubscribe<T, TH>()
-            where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
-        {
-            var eventName = _subsManager.GetEventName<T>();
-            _logger.LogInformation("Unsubscribing from event {EventName}", eventName);
-            _subsManager.RemoveSubscription<T, TH>();
-        }
-        #endregion
-
 
         private void TrySetCustomerChannelTimer()
         {
@@ -190,7 +128,7 @@ namespace EventBusRabbitMQ
                 {
                     if (!_persistentConnection.IsConnected) return;
                     var consumerChannelsCopy = _consumerChannels
-                        .ToDictionary(p=>p.Key,p=>p.Value );
+                        .ToDictionary(p => p.Key, p => p.Value);
                     foreach (var keyValuePair in consumerChannelsCopy)
                     {
                         if (keyValuePair.Value != null && keyValuePair.Value.IsOpen) continue;
@@ -204,7 +142,6 @@ namespace EventBusRabbitMQ
         public void Dispose()
         {
             _persistentConnection?.Dispose();
-            _subsManager?.Dispose();
             if (_timer == null)
                 return;
             _timer.Dispose();
@@ -308,22 +245,16 @@ namespace EventBusRabbitMQ
         {
             _logger.LogTrace("Processing RabbitMQ event: {EventKey}", eventKey);
 
-            if (_subsManager.HasSubscriptionsForEvent(eventKey))
+            if (_subsManager.HasEventTypeByEventKey(eventKey))
             {
-                using (var scope = _serviceScopeFactory.CreateScope())
+                var handlers = _subsManager.GetHandlers(eventKey);
+                foreach (var handler in handlers)
                 {
-                    var handlerTypes = _subsManager.GetHandlersForEvent(eventKey);
-                    var serviceProvider = scope.ServiceProvider;
-                    foreach (var handlerType in handlerTypes)
-                    {
-                        var handler = serviceProvider.GetRequiredService(handlerType);
-                        if (handler == null) continue;
-                        var eventType = _subsManager.GetEventTypeByKey(eventKey);
-                        var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
-                        var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
-                        await Task.Yield();
-                        await (Task)concreteType.GetMethod("Handle").Invoke(handler, new[] { integrationEvent });
-                    }
+                    var eventType = _subsManager.TryGetEventTypeByEventKey(eventKey);
+                    var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
+                    var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
+                    await Task.Yield();
+                    await (Task)concreteType.GetMethod("Handle").Invoke(handler, new[] { integrationEvent });
                 }
             }
             else

@@ -1,32 +1,31 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
+using EventBus.Abstraction;
 
 namespace EventBus
 {
-    public interface IEventHandlerFactory
-    {
-        ICollection<IIntegrationEventHandler> GetHandlers(Type eventType);
-    }
-
-    public class EventHandlerFactory : IEventHandlerFactory
+    public class EventHandlersProvider : IEventHandlersProvider
     {
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public EventHandlerFactory(IServiceScopeFactory serviceScopeFactory)
+        public EventHandlersProvider(IServiceScopeFactory serviceScopeFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
         }
+
         public ICollection<IIntegrationEventHandler> GetHandlers(Type eventType)
         {
+            if (eventType == null)
+                throw new ArgumentNullException(nameof(eventType));
             var eventHandlerType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
             return _serviceScopeFactory
                 .CreateScope()
                 .ServiceProvider
                 .GetServices(eventHandlerType)
-                .Cast<IIntegrationEventHandler>()
-                .ToArray();
+                ?.Cast<IIntegrationEventHandler>()
+                .ToList();
         }
     }
 }

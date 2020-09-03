@@ -1,4 +1,4 @@
-using EventBus;
+using EventBus.Abstraction;
 using EventBusRabbitMQ;
 using EventBusRabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using WebApiSubscription.IntegrationEvents.Events;
+using PublishEvents;
 using WebApiSubscription.IntegrationEvents.Handlers;
 
 namespace WebApiSubscription
@@ -26,7 +26,6 @@ namespace WebApiSubscription
             services.AddControllers();
             services.AddEventBus()
                 .AddEventHandler<UserEvent, UserEventHandler>()
-                .AddEventHandlers<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler, UserLocationUpdatedIntegrationEventHandler1>()
                 .AddRabbitMq(option =>
                 {
                     var connectionConfigure = new RabbitMqConnectionConfigure();
@@ -34,17 +33,14 @@ namespace WebApiSubscription
                     option.ConfigRabbitMqConnectionConfigures(connectionConfigure)
                         .ConfigRabbitMqSubscribeConfigures(builder =>
                         {
-                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                    typeof(UserLocationUpdatedIntegrationEvent).Name,
-                                    "WebAppPublishExchange")
-                                .AddRabbitMqSubscribeConfigure(typeof(UserEvent),
+                            builder.AddRabbitMqSubscribeConfigure(typeof(UserEvent),typeof(UserEvent).FullName,
                                     exchangeName: "WebAppPublishExchange");
                         });
                 });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime hostApplicationLifetime)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -62,8 +58,6 @@ namespace WebApiSubscription
         public void ConfigureEventBus(IApplicationBuilder app)
         {
             var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
-            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler>();
-            eventBus.Subscribe<UserLocationUpdatedIntegrationEvent, UserLocationUpdatedIntegrationEventHandler1>();
             eventBus.Subscribe<UserEvent, UserEventHandler>();
         }
     }

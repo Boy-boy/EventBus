@@ -12,13 +12,9 @@ namespace EventBus
 
         public virtual IServiceCollection Services { get; }
 
-        public virtual EventBusBuilder AddBuildEventTag(Type evenType, string eventTag)
+        public virtual EventBusBuilder AddEventTypeMapping(Type evenType, string eventTag)
         {
-            Services.Configure<EventBusOptions>(option => option.AddBuildEventTag(builder =>
-            {
-                builder.EventType = evenType;
-                builder.EventTag = eventTag;
-            }));
+            Services.Configure<EventBusOptions>(option => option.AddEventTypeMapping(evenType, eventTag));
             return this;
         }
     }

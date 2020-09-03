@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using WebApiPublish.Event;
+using PublishEvents;
 
 namespace WebApiPublish
 {
@@ -29,9 +29,7 @@ namespace WebApiPublish
                     configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
                         .ConfigRabbitMqPublishConfigures(builder =>
                         {
-                            builder.AddRabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                    "WebAppPublishExchange")
-                                .AddRabbitMqPublishConfigure(typeof(UserEvent),
+                            builder.AddRabbitMqPublishConfigure(typeof(UserEvent),
                                     "WebAppPublishExchange");
                         });
                 });

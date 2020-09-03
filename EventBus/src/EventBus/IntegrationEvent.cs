@@ -11,16 +11,10 @@ namespace EventBus
             CreationTime = DateTime.Now;
         }
 
-        public IntegrationEvent(string eventTag)
-        :this()
-        {
-            EventTag = eventTag;
-        }
-        public IntegrationEvent(Guid id, DateTime createDate,string eventTag)
+        public IntegrationEvent(Guid id, DateTime createDate)
         {
             Id = id;
             CreationTime = createDate;
-            EventTag = eventTag;
             UtcCreation = DateTime.UtcNow;
         }
         public Guid Id { get; }
@@ -29,6 +23,5 @@ namespace EventBus
 
         public DateTime CreationTime { get; }
 
-        public string EventTag { get; set; }
     }
 }

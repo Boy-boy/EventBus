@@ -1,6 +1,7 @@
 ﻿using EventBus;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using EventBus.Abstraction;
 using Microsoft.Extensions.Options;
 
 namespace EventBusRabbitMQ
@@ -17,7 +18,7 @@ namespace EventBusRabbitMQ
             if (eventBusRabbitMqOption.GetRabbitMqSubscribeConfigures() == null) return eventBusBuilder;
             foreach (var rabbitMqSubscribeConfigure in eventBusRabbitMqOption.GetRabbitMqSubscribeConfigures())
             {
-                eventBusBuilder.AddBuildEventTag(rabbitMqSubscribeConfigure.EventType,
+                eventBusBuilder.AddEventTypeMapping(rabbitMqSubscribeConfigure.EventType,
                     rabbitMqSubscribeConfigure.EventTag);
             }
             return eventBusBuilder;

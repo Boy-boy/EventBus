@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace EventBus
+namespace EventBus.Abstraction
 {
     public interface IIntegrationEventHandler
     {
@@ -11,6 +11,4 @@ namespace EventBus
     {
         Task Handle(TIntegrationEvent @event);
     }
-
-   
 }

@@ -1,33 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using EventBus.Abstraction;
+using PublishEvents;
+using System;
 using System.Threading.Tasks;
-using EventBus;
-using Microsoft.AspNetCore.Http;
-using WebApiSubscription.IntegrationEvents.Events;
 
 namespace WebApiSubscription.IntegrationEvents.Handlers
 {
-    public class UserLocationUpdatedIntegrationEventHandler
-        : IIntegrationEventHandler<UserLocationUpdatedIntegrationEvent>
-    {
-        public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
-        {
-            Console.WriteLine($"*******************************，id={@event.Id}******************************");
-            await Task.Delay(50);
-        }
-
-    }
-    public class UserLocationUpdatedIntegrationEventHandler1
-        : IIntegrationEventHandler<UserLocationUpdatedIntegrationEvent>
-    {
-        public async Task Handle(UserLocationUpdatedIntegrationEvent @event)
-        {
-            Console.WriteLine($"UserLocationUpdatedIntegrationEventHandler1，信息Id={@event.Id}");
-            await Task.Delay(50);
-        }
-    }
-
     public class UserEventHandler
         : IIntegrationEventHandler<UserEvent>
     {

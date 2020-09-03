@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using EventBus;
+﻿using EventBus.Abstraction;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using PublishEvents;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WebApiPublish.Controllers
 {
@@ -29,10 +29,9 @@ namespace WebApiPublish.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
-            for (var i = 0; i < 1; i++)
+            for (var i = 0; i < 100; i++)
             {
-                _eventBus.Publish(new Event.UserLocationUpdatedIntegrationEvent(i, $"My play is {i}{i}{i}{i}{i}{i}{i}{i}"));
-                _eventBus.Publish(new Event.UserEvent(i, $"My name is {i}{i}{i}{i}{i}{i}{i}{i}"));
+                _eventBus.Publish(new UserEvent(i, $"My name is {i}{i}{i}{i}{i}{i}{i}{i}"));
             }
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
