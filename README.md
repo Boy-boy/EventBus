@@ -45,8 +45,7 @@ appsettings.json文件配置rabbitmq链接信息,例如：
 //配置订阅消息时使用的交换器，队列和消息标签（可不配置，若配置:交换器名称和消息标签需要与发布的消息保持一致）
                        .ConfigRabbitMqSubscribeConfigures(builder =>
                         {
-                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                typeof(UserLocationUpdatedIntegrationEvent).Name,
+                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),                      
                                 "UserLocationUpdatedIntegrationEventExchange");
                         });
                 });
