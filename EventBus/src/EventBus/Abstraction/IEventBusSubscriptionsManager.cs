@@ -8,7 +8,7 @@ namespace EventBus.Abstraction
     /// </summary>
     public interface IEventBusSubscriptionsManager : IDisposable
     {
-        ICollection<EventHandlerWrapper> GetHandlers(string eventName);
+        ICollection<Type> GetHandlerTypes(string eventName);
 
         event EventHandler<string> OnEventRemoved;
 

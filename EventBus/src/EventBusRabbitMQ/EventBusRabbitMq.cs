@@ -23,6 +23,7 @@ namespace EventBusRabbitMQ
         const string QUEUE_NAME = "event_bus_rabbitmq_default_queue";
         private readonly IRabbitMqPersistentConnection _persistentConnection;
         private readonly IEventBusSubscriptionsManager _subsManager;
+        private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly EventBusRabbitMqOptions _options;
         private readonly Dictionary<string, IModel> _consumerChannels;
@@ -32,12 +33,14 @@ namespace EventBusRabbitMQ
 
         public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
             IEventBusSubscriptionsManager subsManager,
+            IEventHandlerFactory eventHandlerFactory,
             ILogger<EventBusRabbitMq> logger,
             IOptions<EventBusRabbitMqOptions> option)
         {
             _options = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
+            _eventHandlerFactory = eventHandlerFactory;
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _consumerChannels = new Dictionary<string, IModel>();
@@ -279,14 +282,15 @@ namespace EventBusRabbitMQ
 
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
-                var eventHandlerWrappers = _subsManager.GetHandlers(eventName);
-                foreach (var eventHandlerWrapper in eventHandlerWrappers)
+                var eventHandleTypes = _subsManager.GetHandlerTypes(eventName);
+                foreach (var eventHandleType in eventHandleTypes)
                 {
+                    var handlerInstance = _eventHandlerFactory.GetHandler(eventHandleType);
                     var eventType = _subsManager.TryGetEventTypeForEventName(eventName);
                     var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
                     var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
                     await Task.Yield();
-                    await (Task)concreteType.GetMethod("Handle").Invoke(eventHandlerWrapper.EventHandler, new[] { integrationEvent });
+                    await (Task)concreteType.GetMethod("Handle").Invoke(handlerInstance, new[] { integrationEvent });
                 }
             }
             else

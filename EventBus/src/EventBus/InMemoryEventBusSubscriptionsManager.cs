@@ -8,21 +8,17 @@ namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
-        private readonly IEventHandlersProvider _eventHandlersProvider;
-
         public event EventHandler<string> OnEventRemoved;
 
-        private ConcurrentDictionary<string, List<EventHandlerWrapper>> _handlers { get; }
+        private ConcurrentDictionary<string, List<Type>> _handlers { get; }
         private ConcurrentDictionary<string, Type> _eventTypes { get; }
 
-        public InMemoryEventBusSubscriptionsManager(
-            IEventHandlersProvider eventHandlersProvider)
+        public InMemoryEventBusSubscriptionsManager()
         {
-            _eventHandlersProvider = eventHandlersProvider;
-            _handlers = new ConcurrentDictionary<string, List<EventHandlerWrapper>>();
+            _handlers = new ConcurrentDictionary<string, List<Type>>();
             _eventTypes = new ConcurrentDictionary<string, Type>();
         }
-        public ICollection<EventHandlerWrapper> GetHandlers(string eventName)
+        public ICollection<Type> GetHandlerTypes(string eventName)
         {
             _handlers.TryGetValue(eventName, out var handles);
             return handles;
@@ -45,14 +41,14 @@ namespace EventBus
             var handlerType = typeof(TH);
             if (!IncludeSubscriptionsHandlesForEventName(eventName))
             {
-                _handlers.GetOrAdd(eventName, new List<EventHandlerWrapper>());
+                _handlers.GetOrAdd(eventName, new List<Type>());
             }
-            if (_handlers[eventName].Any(s => s.EventHandlerType == handlerType))
+            if (_handlers[eventName].Any(s => s == handlerType))
             {
                 throw new ArgumentException(
                     $"Handler Type {handlerType.Name} already registered for '{eventName}'", nameof(handlerType));
             }
-            _handlers[eventName].Add(_eventHandlersProvider.GetHandler(handlerType));
+            _handlers[eventName].Add(handlerType);
         }
 
         private void TryAddSubscriptionEventTypes<T>()
@@ -86,11 +82,11 @@ namespace EventBus
             TryRemoveHandler(eventName, handlerToRemove);
         }
 
-        private EventHandlerWrapper TryFindSubscriptionToRemove(string eventName, Type handlerType)
+        private Type TryFindSubscriptionToRemove(string eventName, Type handlerType)
         {
-            return !IncludeSubscriptionsHandlesForEventName(eventName) ? null : _handlers[eventName].SingleOrDefault(s => s.EventHandlerType == handlerType);
+            return !IncludeSubscriptionsHandlesForEventName(eventName) ? null : _handlers[eventName].SingleOrDefault(s => s == handlerType);
         }
-        private void TryRemoveHandler(string eventName, EventHandlerWrapper subsToRemove)
+        private void TryRemoveHandler(string eventName, Type subsToRemove)
         {
             if (subsToRemove == null) return;
             _handlers[eventName].Remove(subsToRemove);
