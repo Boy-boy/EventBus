@@ -31,7 +31,8 @@ namespace EventBusRabbitMQ
         private Timer _timer;
 
 
-        public EventBusRabbitMq(IRabbitMqPersistentConnection persistentConnection,
+        public EventBusRabbitMq(
+            IRabbitMqPersistentConnection persistentConnection,
             IEventBusSubscriptionsManager subsManager,
             IEventHandlerFactory eventHandlerFactory,
             ILogger<EventBusRabbitMq> logger,
@@ -40,10 +41,10 @@ namespace EventBusRabbitMQ
             _options = option.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
-            _eventHandlerFactory = eventHandlerFactory;
-            _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
+            _eventHandlerFactory = eventHandlerFactory ?? throw new ArgumentNullException(nameof(eventHandlerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _consumerChannels = new Dictionary<string, IModel>();
+            _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
         private void SubsManager_OnEventRemoved(object sender, string eventName)
         {
@@ -212,7 +213,6 @@ namespace EventBusRabbitMQ
             return channel;
             void ConsumerChannelCallbackException(object sender, CallbackExceptionEventArgs args)
             {
-                _logger.LogWarning(args.Exception, "Recreating RabbitMQ consumer channel");
                 if (!_persistentConnection.IsConnected)
                 {
                     if (!_consumerChannels.ContainsKey(queueName)) return;
@@ -220,6 +220,7 @@ namespace EventBusRabbitMQ
                     _consumerChannels[queueName].CallbackException -= ConsumerChannelCallbackException;
                     return;
                 }
+                _logger.LogWarning(args.Exception, "Recreating RabbitMQ consumer channel");
                 if (_consumerChannels.ContainsKey(queueName))
                 {
                     _consumerChannels[queueName]?.Dispose();
