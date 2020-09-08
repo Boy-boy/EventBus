@@ -26,13 +26,14 @@ appsettings.json文件配置rabbitmq链接信息,例如：
  //配置发布消息时使用的交换器（可不配置）
                         .ConfigRabbitMqPublishConfigures(builder=>
                         {
-                            builder.AddRabbitMqPublishConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                "UserLocationUpdatedIntegrationEventExchange");
+                            builder.AddRabbitMqPublishConfigure(typeof(DemoEvent),
+                                "DemoEvent");
                         });
                 });
 
   ``` 
 ## subscribe
+### 1.在ConfigureServices配置如下代码块
 ```
   services.AddEventBus()
                 .AddEventHandler<TEvent, TEventHandler>()
@@ -45,9 +46,13 @@ appsettings.json文件配置rabbitmq链接信息,例如：
 //配置订阅消息时使用的交换器，队列和消息标签（可不配置，若配置:交换器名称和消息标签需要与发布的消息保持一致）
                        .ConfigRabbitMqSubscribeConfigures(builder =>
                         {
-                            builder.AddRabbitMqSubscribeConfigure(typeof(UserLocationUpdatedIntegrationEvent),
-                                typeof(UserLocationUpdatedIntegrationEvent).Name,
-                                "UserLocationUpdatedIntegrationEventExchange");
+                            builder.AddRabbitMqSubscribeConfigure(typeof(DemoEvent),
+                                "DemoEvent");
                         });
                 });
 ``` 
+### 2.在Configure配置如下代码块
+```
+ var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+ eventBus.Subscribe<DemoEvent,DemoEventHandler>();
+```
