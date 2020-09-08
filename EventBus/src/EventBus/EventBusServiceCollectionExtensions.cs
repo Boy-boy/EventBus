@@ -7,22 +7,23 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class EventBusServiceCollectionExtensions
     {
-        public static EventBusBuilder AddEventBus(this IServiceCollection services)
+        public static EventBusBuilder AddEventBus(this IServiceCollection services, Action<EventBusOptions> configureOptions = null)
         {
             if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
             services.TryAddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
-            services.TryAddSingleton<IEventHandlersProvider, EventHandlersProvider>();
-            services.TryAddSingleton<IEventTypeProvider, EventTypeProvider>();
+            services.TryAddSingleton<IEventHandlersProvider, IocEventHandlersProvider>();
+            if (configureOptions != null)
+                services.Configure(configureOptions);
             var builder = new EventBusBuilder(services);
             return builder;
         }
         public static EventBusBuilder AddEventHandler<TEvent, THandler>(this EventBusBuilder eventBusBuilder)
             where THandler : class, IIntegrationEventHandler<TEvent>
             where TEvent : IntegrationEvent
-        {
+        { 
             eventBusBuilder.Services.AddTransient<IIntegrationEventHandler<TEvent>, THandler>();
             return eventBusBuilder;
         }

@@ -1,31 +1,15 @@
-﻿using System;
+﻿using EventBus.Abstraction;
 using System.Collections.Generic;
 
 namespace EventBus
 {
     public class EventBusOptions
     {
-        public Dictionary<string, Type> EventTypeMapping { get; } = new Dictionary<string, Type>();
+        public IList<IIntegrationEventHandler> SubscriptionHandlers { get; }
 
-        public void AddEventTypeMapping(Type evenType, string eventTag)
+        public EventBusOptions()
         {
-            if (evenType == null)
-                throw new ArgumentNullException(nameof(evenType));
-            if (string.IsNullOrEmpty(eventTag))
-                throw new ArgumentNullException(nameof(eventTag));
-            if (EventTypeMapping.ContainsKey(eventTag))
-            {
-                if (EventTypeMapping[eventTag] != evenType)
-                {
-                    throw new ArgumentException(
-                        $"Event Tag {eventTag} already exists,please make sure the event key is unique");
-                }
-            }
-            else
-            {
-                EventTypeMapping.Add(eventTag, evenType);
-            }
-
+            SubscriptionHandlers = new List<IIntegrationEventHandler>();
         }
     }
 }

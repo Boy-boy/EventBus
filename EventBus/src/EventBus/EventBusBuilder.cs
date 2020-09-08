@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace EventBus
 {
@@ -11,11 +10,5 @@ namespace EventBus
         }
 
         public virtual IServiceCollection Services { get; }
-
-        public virtual EventBusBuilder AddEventTypeMapping(Type evenType, string eventTag)
-        {
-            Services.Configure<EventBusOptions>(option => option.AddEventTypeMapping(evenType, eventTag));
-            return this;
-        }
     }
 }

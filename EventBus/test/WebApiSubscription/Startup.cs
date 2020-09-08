@@ -33,7 +33,7 @@ namespace WebApiSubscription
                     option.ConfigRabbitMqConnectionConfigures(connectionConfigure)
                         .ConfigRabbitMqSubscribeConfigures(builder =>
                         {
-                            builder.AddRabbitMqSubscribeConfigure(typeof(UserEvent),typeof(UserEvent).FullName,
+                            builder.AddRabbitMqSubscribeConfigure(typeof(UserEvent),
                                     exchangeName: "WebAppPublishExchange");
                         });
                 });

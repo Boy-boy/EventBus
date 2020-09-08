@@ -96,7 +96,7 @@ namespace EventBusRabbitMQ
         {
             if (_disposed) return;
 
-            _logger.LogWarning("A RabbitMQ connection is shutdown. Trying to re-connect...");
+            _logger.LogWarning("A RabbitMQ connection is on blocked. Trying to re-connect...");
 
             TryConnect();
         }

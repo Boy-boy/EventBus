@@ -1,8 +1,7 @@
 ﻿using EventBus;
+using EventBus.Abstraction;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using EventBus.Abstraction;
-using Microsoft.Extensions.Options;
 
 namespace EventBusRabbitMQ
 {
@@ -14,13 +13,6 @@ namespace EventBusRabbitMQ
             eventBusBuilder.Services.AddSingleton<IEventBus, EventBusRabbitMq>();
             if (configure == null) return eventBusBuilder;
             eventBusBuilder.Services.Configure(configure);
-            var eventBusRabbitMqOption= eventBusBuilder.Services.BuildServiceProvider().GetRequiredService<IOptions<EventBusRabbitMqOptions>>().Value;
-            if (eventBusRabbitMqOption.GetRabbitMqSubscribeConfigures() == null) return eventBusBuilder;
-            foreach (var rabbitMqSubscribeConfigure in eventBusRabbitMqOption.GetRabbitMqSubscribeConfigures())
-            {
-                eventBusBuilder.AddEventTypeMapping(rabbitMqSubscribeConfigure.EventType,
-                    rabbitMqSubscribeConfigure.EventTag);
-            }
             return eventBusBuilder;
         }
     }

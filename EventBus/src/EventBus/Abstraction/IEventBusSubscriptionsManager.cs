@@ -6,12 +6,25 @@ namespace EventBus.Abstraction
     /// <summary>
     /// 消息订阅管理器
     /// </summary>
-    public interface IEventBusSubscriptionsManager
+    public interface IEventBusSubscriptionsManager : IDisposable
     {
-        ICollection<IIntegrationEventHandler> GetHandlers(string eventKey);
+        ICollection<EventHandlerWrapper> GetHandlers(string eventName);
 
-        Type TryGetEventTypeByEventKey(string eventKey);
+        event EventHandler<string> OnEventRemoved;
 
-        bool HasEventTypeByEventKey(string eventKey);
+        void AddSubscription<T, TH>()
+            where T : IntegrationEvent
+            where TH : IIntegrationEventHandler<T>;
+
+        void RemoveSubscription<T, TH>()
+            where TH : IIntegrationEventHandler<T>
+            where T : IntegrationEvent;
+
+        bool IncludeSubscriptionsHandlesForEventName(string eventName);
+
+        bool IncludeEventTypeForEventName(string eventName);
+
+        Type TryGetEventTypeForEventName(string eventName);
+
     }
 }
