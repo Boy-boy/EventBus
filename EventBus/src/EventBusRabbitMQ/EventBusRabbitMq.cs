@@ -112,7 +112,7 @@ namespace EventBusRabbitMQ
         #region Subscribe
         public void Subscribe<T, TH>()
             where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
+            where TH : IIntegrationEventHandler<T>, new()
         {
             var eventType = typeof(T);
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
@@ -148,7 +148,7 @@ namespace EventBusRabbitMQ
 
         public void UnSubscribe<T, TH>()
             where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
+            where TH : IIntegrationEventHandler<T>, new()
         {
             var eventName = EventNameAttribute.GetNameOrDefault(typeof(T));
             _logger.LogInformation("Unsubscribing from event {EventName}", eventName);
@@ -292,7 +292,7 @@ namespace EventBusRabbitMQ
                     var integrationEvent = JsonConvert.DeserializeObject(message, eventType);
                     var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
                     await Task.Yield();
-                    await (Task)concreteType.GetMethod("Handle").Invoke(handlerInstance, new[] { integrationEvent });
+                    await (Task)concreteType.GetMethod("HandleAsync").Invoke(handlerInstance, new[] { integrationEvent });
                 }
             }
             else

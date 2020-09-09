@@ -8,7 +8,7 @@ namespace WebApiSubscription.IntegrationEvents.Handlers
     public class UserEventHandler
         : IIntegrationEventHandler<UserEvent>
     {
-        public async Task Handle(UserEvent @event)
+        public async Task HandleAsync(UserEvent @event)
         {
             Console.WriteLine($"UserEventHandler，信息Id={@event.Name}");
             await Task.Delay(50);

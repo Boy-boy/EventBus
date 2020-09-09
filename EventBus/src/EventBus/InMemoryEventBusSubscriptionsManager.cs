@@ -27,7 +27,7 @@ namespace EventBus
         #region AddSubscription
         public void AddSubscription<T, TH>()
             where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
+            where TH : IIntegrationEventHandler<T>, new()
         {
             TryAddSubscriptionEventTypes<T>();
             TryAddSubscriptionHandlers<T, TH>();
@@ -75,7 +75,7 @@ namespace EventBus
         #region RemoveSubscription
         public void RemoveSubscription<T, TH>()
             where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
+            where TH : IIntegrationEventHandler<T>, new()
         {
             var eventName = EventNameAttribute.GetNameOrDefault(typeof(T));
             var handlerToRemove = TryFindSubscriptionToRemove(eventName, typeof(TH));
