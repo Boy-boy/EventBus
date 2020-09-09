@@ -21,7 +21,7 @@ namespace EventBus
         public ICollection<Type> GetHandlerTypes(string eventName)
         {
             _handlers.TryGetValue(eventName, out var handles);
-            return handles;
+            return handles ?? new List<Type>();
         }
 
         #region AddSubscription
