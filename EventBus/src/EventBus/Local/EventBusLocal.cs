@@ -48,7 +48,7 @@ namespace EventBus.Local
             }
             else
             {
-                throw new AggregateException($"No subscription for RabbitMQ event: {eventName}");
+                throw new AggregateException($"No subscription for local memory event: {eventName}");
             }
             if (exceptions.Any())
             {
