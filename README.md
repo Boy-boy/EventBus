@@ -1,5 +1,20 @@
 # EventBus
-使用RabbitMq实现EventBus
+## 一：使用InMemory实现EventBus
+#### 1.在ConfigureServices配置如下代码块
+``` 
+   services.AddEventBus()
+           .AddEventHandler<TEvent, TEventHandler>()
+           .AddLocal();
+```
+#### 2.在Configure配置如下代码块
+```
+ var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+ eventBus.Subscribe<TEvent,TEventHandler>();
+```
+
+
+
+## 二.使用RabbitMq实现EventBus
 
 appsettings.json文件配置rabbitmq链接信息,例如：
 ```
@@ -12,8 +27,8 @@ appsettings.json文件配置rabbitmq链接信息,例如：
   }
 ``` 
 
-# 使用方式：
-## Publish
+### 使用方式：
+#### Publish
 
 ```
  services.AddEventBus()
@@ -32,7 +47,7 @@ appsettings.json文件配置rabbitmq链接信息,例如：
                 });
 
   ``` 
-## subscribe
+### subscribe
 #### 1.在ConfigureServices配置如下代码块
 ```
   services.AddEventBus()
