@@ -66,7 +66,7 @@ namespace EventBusRabbitMQ
         }
 
         #region Publish
-        public void Publish(IntegrationEvent @event)
+        public Task Publish(IntegrationEvent @event)
         {
             if (!_persistentConnection.IsConnected)
             {
@@ -105,6 +105,7 @@ namespace EventBusRabbitMQ
                         body: body);
                 });
             }
+            return Task.CompletedTask;
         }
         #endregion
 
