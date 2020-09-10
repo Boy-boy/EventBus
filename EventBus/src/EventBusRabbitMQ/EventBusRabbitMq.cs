@@ -19,12 +19,15 @@ namespace EventBus.RabbitMQ
         const string EXCHANGE_NAME = "event_bus_rabbitmq_default_exchange";
         const string QUEUE_NAME = "event_bus_rabbitmq_default_queue";
         private readonly IRabbitMqPersistentConnection _persistentConnection;
-        private readonly IRabbitMqMessageConsumer _rabbitMqMessageConsumer;
+        private readonly IRabbitMqMessageConsumerFactory _rabbitMqMessageConsumerFactory;
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly IEventHandlerFactory _eventHandlerFactory;
         private readonly ILogger<EventBusRabbitMq> _logger;
         private readonly EventBusRabbitMqOptions _eventBusRabbitMqOptions;
         private readonly int _retryCount = 5;
+        private readonly object _lock = new object();
+        protected IRabbitMqMessageConsumer RabbitMqMessageConsumer { get; private set; }
+
 
         public EventBusRabbitMq(
             IRabbitMqPersistentConnection persistentConnection,
@@ -36,19 +39,16 @@ namespace EventBus.RabbitMQ
         {
             _eventBusRabbitMqOptions = options.Value;
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
+            _rabbitMqMessageConsumerFactory = rabbitMqMessageConsumerFactory;
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _eventHandlerFactory = eventHandlerFactory ?? throw new ArgumentNullException(nameof(eventHandlerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
-            _rabbitMqMessageConsumer = rabbitMqMessageConsumerFactory.Create(
-                new RabbitMqExchangeDeclareConfigure(_eventBusRabbitMqOptions.ExchangeName, "direct", true),
-                new RabbitMqQueueDeclareConfigure(_eventBusRabbitMqOptions.QueueName));
-            _rabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
         }
 
         private void SubsManager_OnEventRemoved(object sender, string eventName)
         {
-            _rabbitMqMessageConsumer.UnbindAsync(eventName);
+            RabbitMqMessageConsumer?.UnbindAsync(eventName);
         }
 
         protected override Task PublishAsync(Type eventType, IntegrationEvent eventDate)
@@ -74,7 +74,7 @@ namespace EventBus.RabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
 
                 var model = channel;
-                model.ExchangeDeclare(exchange: _eventBusRabbitMqOptions.ExchangeName, type: "direct", durable: true);
+                model.ExchangeDeclare(exchange: _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName, type: "direct", durable: true);
                 policy.Execute(() =>
                 {
                     var properties = model.CreateBasicProperties();
@@ -83,7 +83,7 @@ namespace EventBus.RabbitMQ
                     _logger.LogTrace("Publishing event to RabbitMQ: {EventId}", eventDate.Id);
 
                     model.BasicPublish(
-                        exchange: _eventBusRabbitMqOptions.ExchangeName,
+                        exchange: _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName,
                         routingKey: eventName,
                         mandatory: true,
                         basicProperties: properties,
@@ -95,10 +95,12 @@ namespace EventBus.RabbitMQ
 
         protected override void Subscribe(Type eventType, Type handlerType)
         {
+            SetMessageConsumer(eventType);
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             if (!_subsManager.IncludeSubscriptionsHandlesForEventName(eventName))
-                _rabbitMqMessageConsumer.BindAsync(eventName);
+                RabbitMqMessageConsumer?.BindAsync(eventName);
             _subsManager.AddSubscription(eventType, handlerType);
+
         }
 
         protected override void UnSubscribe(Type eventType, Type handlerType)
@@ -110,9 +112,45 @@ namespace EventBus.RabbitMQ
 
         public void Dispose()
         {
-            _rabbitMqMessageConsumer?.Dispose();
+            RabbitMqMessageConsumer?.Dispose();
             _persistentConnection?.Dispose();
             _subsManager?.Dispose();
+        }
+
+        private void SetMessageConsumer(Type eventType)
+        {
+            var rabbitMqSubscribeConfigure = _eventBusRabbitMqOptions.RabbitSubscribeConfigures.Find(p => p.EventType == eventType);
+            if (rabbitMqSubscribeConfigure != null)
+            {
+                RabbitMqMessageConsumer = _rabbitMqMessageConsumerFactory.Create(
+                    new RabbitMqExchangeDeclareConfigure(_eventBusRabbitMqOptions.ExchangeName, "direct", true),
+                    new RabbitMqQueueDeclareConfigure(_eventBusRabbitMqOptions.QueueName));
+                RabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
+            }
+
+            if (RabbitMqMessageConsumer != null) return;
+            lock (_lock)
+            {
+                if (RabbitMqMessageConsumer != null) return;
+                RabbitMqMessageConsumer = _rabbitMqMessageConsumerFactory.Create(
+                    new RabbitMqExchangeDeclareConfigure(_eventBusRabbitMqOptions.ExchangeName, "direct", true),
+                    new RabbitMqQueueDeclareConfigure(_eventBusRabbitMqOptions.QueueName));
+                RabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
+            }
+        }
+
+        private string GetPublishConfigure()
+        {
+            return string.IsNullOrEmpty(_eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName)
+                ? EXCHANGE_NAME
+                : _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName;
+        }
+
+        private (string, string) GetSubscribeConfigures(Type eventType)
+        {
+            var subscribeConfigure = _eventBusRabbitMqOptions.RabbitSubscribeConfigures.Find(p => p.EventType == eventType);
+
+            return ("", "");
         }
 
         private async Task Consumer_Received(IModel model, BasicDeliverEventArgs eventArgs)
