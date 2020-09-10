@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -9,53 +8,35 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ
 {
-    public class DefaultRabbitMqMessageConsumer : IRabbitMqMessageConsumer, IDisposable
+    public class DefaultRabbitMqMessageConsumer : IRabbitMqMessageConsumer
     {
         private readonly ILogger<DefaultRabbitMqMessageConsumer> _logger;
         private readonly IRabbitMqPersistentConnection _persistentConnection;
-        private readonly RabbitMqExchangeDeclareConfigure _exchangeDeclare;
-        private readonly RabbitMqQueueDeclareConfigure _queueDeclare;
-        protected IModel ConsumerChannel { get; private set; }
         private Timer _timer;
 
         protected ConcurrentBag<Func<IModel, BasicDeliverEventArgs, Task>> ProcessEvents { get; }
+        protected RabbitMqExchangeDeclareConfigure ExchangeDeclare { get; private set; }
+        protected RabbitMqQueueDeclareConfigure QueueDeclare { get; private set; }
+        protected IModel ConsumerChannel { get; private set; }
 
         public DefaultRabbitMqMessageConsumer(
-            ILogger<DefaultRabbitMqMessageConsumer> logger,
             IRabbitMqPersistentConnection connection,
-            IOptions<RabbitMqOptions> options)
+            ILogger<DefaultRabbitMqMessageConsumer> logger)
         {
-            var optionValue = options.Value;
-            _exchangeDeclare = optionValue.ExchangeDeclare;
-            _queueDeclare = optionValue.QueueDeclare;
             _logger = logger;
             _persistentConnection = connection;
             ProcessEvents = new ConcurrentBag<Func<IModel, BasicDeliverEventArgs, Task>>();
-            InitializeExchangeAndQueue();
+        }
+
+        public void Initialize(
+            RabbitMqExchangeDeclareConfigure exchangeDeclare,
+            RabbitMqQueueDeclareConfigure queueDeclare)
+        {
+            ExchangeDeclare = exchangeDeclare;
+            QueueDeclare = queueDeclare;
             InitializeTimer();
         }
 
-        private void InitializeExchangeAndQueue()
-        {
-            if (!_persistentConnection.IsConnected)
-            {
-                _persistentConnection.TryConnect();
-            }
-            using (var channel = _persistentConnection.CreateModel())
-            {
-                channel.ExchangeDeclare(
-                    exchange: _exchangeDeclare.ExchangeName,
-                    type: _exchangeDeclare.Type,
-                    durable: _exchangeDeclare.Durable,
-                    autoDelete: _exchangeDeclare.AutoDelete,
-                    arguments: _exchangeDeclare.Arguments);
-                channel.QueueDeclare(queue: _queueDeclare.QueueName,
-                    durable: _queueDeclare.Durable,
-                    exclusive: _queueDeclare.Exclusive,
-                    autoDelete: _queueDeclare.AutoDelete,
-                    arguments: _queueDeclare.Arguments);
-            }
-        }
         private void InitializeTimer()
         {
             _timer = new Timer(sender =>
@@ -77,8 +58,19 @@ namespace RabbitMQ
             }
             using (var channel = _persistentConnection.CreateModel())
             {
-                channel.QueueBind(queue: _queueDeclare.QueueName,
-                    exchange: _exchangeDeclare.ExchangeName,
+                channel.ExchangeDeclare(
+                    exchange: ExchangeDeclare.ExchangeName,
+                    type: ExchangeDeclare.Type,
+                    durable: ExchangeDeclare.Durable,
+                    autoDelete: ExchangeDeclare.AutoDelete,
+                    arguments: ExchangeDeclare.Arguments);
+                channel.QueueDeclare(queue: QueueDeclare.QueueName,
+                    durable: QueueDeclare.Durable,
+                    exclusive: QueueDeclare.Exclusive,
+                    autoDelete: QueueDeclare.AutoDelete,
+                    arguments: QueueDeclare.Arguments);
+                channel.QueueBind(queue: QueueDeclare.QueueName,
+                    exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
             }
             return Task.CompletedTask;
@@ -92,8 +84,8 @@ namespace RabbitMQ
             }
             using (var channel = _persistentConnection.CreateModel())
             {
-                channel.QueueUnbind(queue: _queueDeclare.QueueName,
-                    exchange: _exchangeDeclare.ExchangeName,
+                channel.QueueUnbind(queue: QueueDeclare.QueueName,
+                    exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
             }
             return Task.CompletedTask;
@@ -114,6 +106,7 @@ namespace RabbitMQ
             TryCreateConsumerChannel();
             StartBasicConsume();
         }
+
         private void TryCreateConsumerChannel()
         {
             if (ConsumerChannel != null && !ConsumerChannel.IsClosed) return;
@@ -130,7 +123,7 @@ namespace RabbitMQ
             consumer.Received += Consumer_Received;
             ConsumerChannel.BasicQos(0, 50, false);
             ConsumerChannel.BasicConsume(
-                queue: _queueDeclare.QueueName,
+                queue: QueueDeclare.QueueName,
                 autoAck: false,
                 consumer: consumer);
         }

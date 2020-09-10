@@ -5,7 +5,7 @@ using RabbitMQ.Client.Events;
 
 namespace RabbitMQ
 {
-    public interface IRabbitMqMessageConsumer
+    public interface IRabbitMqMessageConsumer:IDisposable
     {
         Task BindAsync(string routingKey);
 

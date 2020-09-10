@@ -1,11 +1,10 @@
 using EventBus.RabbitMQ;
-using EventBus.RabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PublishEvents;
+using RabbitMQ;
 
 namespace WebApiPublish
 {
@@ -21,17 +20,19 @@ namespace WebApiPublish
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddRabbitMq(option =>
+            {
+                option.Connection.HostName = "127.0.0.1";
+                option.Connection.UserName = "guest";
+                option.Connection.Password = "guest";
+                option.Connection.Port = -1;
+                option.Connection.VirtualHost = "/";
+
+            });
             services.AddEventBus()
-                .AddRabbitMq(configure =>
+                .AddRabbitMq(option =>
                 {
-                    var connectionConfigure = new RabbitMqConnectionConfigure();
-                    Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connectionConfigure);
-                    configure.ConfigRabbitMqConnectionConfigures(connectionConfigure)
-                        .ConfigRabbitMqPublishConfigures(builder =>
-                        {
-                            builder.AddRabbitMqPublishConfigure(typeof(UserEvent),
-                                    "WebAppPublishExchange");
-                        });
+                    option.SetExchangeAndQueue("WebAppPublishExchange", "event_bus_rabbitmq_default_queue");
                 });
         }
 
