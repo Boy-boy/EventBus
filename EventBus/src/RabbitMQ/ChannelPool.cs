@@ -1,8 +1,6 @@
-﻿using System;
+﻿using RabbitMQ.Client;
+using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
-using RabbitMQ.Client;
 
 namespace RabbitMQ
 {
@@ -16,7 +14,6 @@ namespace RabbitMQ
             _connection = connection;
             Channels=new ConcurrentDictionary<string, IModel>();
         }
-
 
         public IModel CreateModel()
         {
