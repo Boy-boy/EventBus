@@ -29,32 +29,15 @@ namespace EventBus
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>, new()
         {
-            TryAddSubscriptionEventTypes<T>();
-            TryAddSubscriptionHandlers<T, TH>();
+            AddSubscription(typeof(T), typeof(TH));
         }
-
-        private void TryAddSubscriptionHandlers<T, TH>()
-            where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>
+        public void AddSubscription(Type eventType, Type handlerType)
         {
-            var eventName = EventNameAttribute.GetNameOrDefault(typeof(T));
-            var handlerType = typeof(TH);
-            if (!IncludeSubscriptionsHandlesForEventName(eventName))
-            {
-                _handlers.GetOrAdd(eventName, new List<Type>());
-            }
-            if (_handlers[eventName].Any(s => s == handlerType))
-            {
-                throw new ArgumentException(
-                    $"Handler Type {handlerType.Name} already registered for '{eventName}'", nameof(handlerType));
-            }
-            _handlers[eventName].Add(handlerType);
+            TryAddSubscriptionEventType(eventType);
+            TryAddSubscriptionHandler(eventType, handlerType);
         }
-
-        private void TryAddSubscriptionEventTypes<T>()
-            where T : IntegrationEvent
+        private void TryAddSubscriptionEventType(Type eventType)
         {
-            var eventType = typeof(T);
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             if (_eventTypes.ContainsKey(eventName))
             {
@@ -70,6 +53,20 @@ namespace EventBus
                 _eventTypes[eventName] = eventType;
             }
         }
+        private void TryAddSubscriptionHandler(Type eventType, Type handlerType)
+        {
+            var eventName = EventNameAttribute.GetNameOrDefault(eventType);
+            if (!IncludeSubscriptionsHandlesForEventName(eventName))
+            {
+                _handlers.GetOrAdd(eventName, new List<Type>());
+            }
+            if (_handlers[eventName].Any(s => s == handlerType))
+            {
+                throw new ArgumentException(
+                    $"Handler Type {handlerType.Name} already registered for '{eventName}'", nameof(handlerType));
+            }
+            _handlers[eventName].Add(handlerType);
+        }
         #endregion
 
         #region RemoveSubscription
@@ -77,11 +74,14 @@ namespace EventBus
             where T : IntegrationEvent
             where TH : IIntegrationEventHandler<T>, new()
         {
-            var eventName = EventNameAttribute.GetNameOrDefault(typeof(T));
-            var handlerToRemove = TryFindSubscriptionToRemove(eventName, typeof(TH));
+            RemoveSubscription(typeof(T), typeof(TH));
+        }
+        public void RemoveSubscription(Type eventType, Type handlerType)
+        {
+            var eventName = EventNameAttribute.GetNameOrDefault(eventType);
+            var handlerToRemove = TryFindSubscriptionToRemove(eventName, handlerType);
             TryRemoveHandler(eventName, handlerToRemove);
         }
-
         private Type TryFindSubscriptionToRemove(string eventName, Type handlerType)
         {
             return !IncludeSubscriptionsHandlesForEventName(eventName) ? null : _handlers[eventName].SingleOrDefault(s => s == handlerType);

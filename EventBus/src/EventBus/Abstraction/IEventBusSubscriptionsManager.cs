@@ -21,6 +21,11 @@ namespace EventBus.Abstraction
             where TH : IIntegrationEventHandler<T>, new();
 
 
+        void AddSubscription(Type eventType, Type handlerType);
+
+        void RemoveSubscription(Type eventType, Type handlerType);
+
+
         bool IncludeSubscriptionsHandlesForEventName(string eventName);
 
         bool IncludeEventTypeForEventName(string eventName);

@@ -1,6 +1,6 @@
 ﻿using RabbitMQ.Client;
 
-namespace EventBus.RabbitMQ.Configures
+namespace RabbitMQ
 {
     public class RabbitMqConnectionConfigure
     {
@@ -25,7 +25,7 @@ namespace EventBus.RabbitMQ.Configures
                     Port = Port,
                     UserName = UserName,
                     Password = Password,
-                    DispatchConsumersAsync=true
+                    DispatchConsumersAsync = true
                 };
                 if (!string.IsNullOrWhiteSpace(this.VirtualHost))
                     connectionFactory.VirtualHost = this.VirtualHost;

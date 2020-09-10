@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EventBusRabbitMQ.Configures
+namespace EventBus.RabbitMQ.Configures
 {
 
     public class RabbitMqPublishConfigureBuilder

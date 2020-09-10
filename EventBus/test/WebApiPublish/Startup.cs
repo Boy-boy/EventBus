@@ -1,5 +1,5 @@
-using EventBusRabbitMQ;
-using EventBusRabbitMQ.Configures;
+using EventBus.RabbitMQ;
+using EventBus.RabbitMQ.Configures;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

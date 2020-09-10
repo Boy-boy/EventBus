@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace EventBus.Local
 {
-    public class EventBusLocal : IEventBus
+    public class EventBusLocal : EventBusBase, IDisposable
     {
         private readonly IEventBusSubscriptionsManager _subsManager;
         private readonly IEventHandlerFactory _eventHandlerFactory;
@@ -23,10 +23,9 @@ namespace EventBus.Local
             _logger = logger;
         }
 
-        public async Task Publish(IntegrationEvent @event)
+        protected override async Task PublishAsync(Type eventType, IntegrationEvent eventDate)
         {
             var exceptions = new List<Exception>();
-            var eventType = @event.GetType();
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
@@ -38,7 +37,7 @@ namespace EventBus.Local
                         var handlerInstance = _eventHandlerFactory.GetHandler(eventHandleType);
                         var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
                         await Task.Yield();
-                        await (Task)concreteType.GetMethod("HandleAsync").Invoke(handlerInstance, new object[] { @event });
+                        await (Task)concreteType.GetMethod("HandleAsync").Invoke(handlerInstance, new object[] { eventDate });
                     }
                     catch (TargetInvocationException ex)
                     {
@@ -61,18 +60,14 @@ namespace EventBus.Local
             }
         }
 
-        public void Subscribe<T, TH>()
-            where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>, new()
+        protected override void Subscribe(Type eventType, Type handlerType)
         {
-            _subsManager.AddSubscription<T, TH>();
+            _subsManager.AddSubscription(eventType, handlerType);
         }
 
-        public void UnSubscribe<T, TH>()
-            where T : IntegrationEvent
-            where TH : IIntegrationEventHandler<T>, new()
+        protected override void UnSubscribe(Type eventType, Type handlerType)
         {
-            _subsManager.RemoveSubscription<T, TH>();
+            _subsManager.RemoveSubscription(eventType, handlerType);
         }
 
         public void Dispose()

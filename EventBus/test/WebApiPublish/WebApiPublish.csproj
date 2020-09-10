@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\EventBusRabbitMQ\EventBusRabbitMQ.csproj" />
+    <ProjectReference Include="..\..\src\EventBusRabbitMQ\EventBus.RabbitMQ.csproj" />
     <ProjectReference Include="..\..\src\EventBus\EventBus.csproj" />
     <ProjectReference Include="..\PublishEvents\PublishEvents.csproj" />
   </ItemGroup>

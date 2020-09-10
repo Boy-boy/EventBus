@@ -1,9 +1,9 @@
-﻿using System;
-using EventBusRabbitMQ.Configures;
+﻿using EventBus.RabbitMQ.Configures;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EventBusRabbitMQ
+namespace EventBus.RabbitMQ
 {
     public class EventBusRabbitMqOptions
     {

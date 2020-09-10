@@ -1,9 +1,8 @@
-﻿using EventBus;
-using EventBus.Abstraction;
+﻿using EventBus.Abstraction;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace EventBusRabbitMQ
+namespace EventBus.RabbitMQ
 {
     public static class EventBusRabbitMqCollectionExtensions
     {

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace EventBus.Abstraction
 {
-    public interface IEventBus: IDisposable
+    public interface IEventBus
     {
-        Task Publish(IntegrationEvent @event);
+        Task PublishAsync<TEvent>(TEvent eventData)
+            where TEvent : IntegrationEvent;
 
         void Subscribe<T, TH>()
             where T : IntegrationEvent
