@@ -6,7 +6,7 @@ namespace EventBus.RabbitMQ
 {
     public static class EventBusRabbitMqCollectionExtensions
     {
-        public static EventBusBuilder AddRabbitMq(this EventBusBuilder eventBusBuilder, Action<EventBusRabbitMqOptions> configure)
+        public static EventBusBuilder AddRabbitMq(this EventBusBuilder eventBusBuilder, Action<EventBusRabbitMqOptions> configure=null)
         {
             eventBusBuilder.Services.AddSingleton<IEventBus, EventBusRabbitMq>();
             if (configure == null) return eventBusBuilder;

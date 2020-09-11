@@ -104,7 +104,7 @@ namespace EventBus.RabbitMQ
 
         protected override void Subscribe(Type eventType, Type handlerType)
         {
-            var rabbitMqMessageConsumer = TeySetOrGetMessageConsumer(eventType);
+            var rabbitMqMessageConsumer = TeyGetOrSetMessageConsumer(eventType);
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             _logger.LogInformation("Subscribing from event {EventName}", eventName);
             if (!_subsManager.IncludeSubscriptionsHandlesForEventName(eventName))
@@ -130,7 +130,7 @@ namespace EventBus.RabbitMQ
             _subsManager?.Dispose();
         }
 
-        private IRabbitMqMessageConsumer TeySetOrGetMessageConsumer(Type eventType)
+        private IRabbitMqMessageConsumer TeyGetOrSetMessageConsumer(Type eventType)
         {
             var (exchangeName, queueName) = GetSubscribeConfigure(eventType);
             var key = $"{exchangeName}_{queueName}";

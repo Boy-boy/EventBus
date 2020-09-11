@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventBus.Abstraction;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using PublishEvents;
+using WebApiSubscription.IntegrationEvents.Handlers;
 
 namespace WebApiSubscription.Controllers
 {
@@ -17,10 +20,12 @@ namespace WebApiSubscription.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
+        private readonly IEventBus _eventBus;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger,IEventBus eventBus)
         {
             _logger = logger;
+            _eventBus = eventBus;
         }
 
         [HttpGet]
@@ -34,6 +39,12 @@ namespace WebApiSubscription.Controllers
                 Summary = Summaries[rng.Next(Summaries.Length)]
             })
             .ToArray();
+        }
+        [HttpGet("unsub")]
+        public string UnSubscribe()
+        {
+            _eventBus.UnSubscribe<UserEvent, UserEventHandler>();
+            return "UnSubscribe";
         }
     }
 }

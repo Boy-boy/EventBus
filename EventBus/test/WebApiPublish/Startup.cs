@@ -22,18 +22,12 @@ namespace WebApiPublish
             services.AddControllers();
             services.AddRabbitMq(option =>
             {
-                option.Connection.HostName = "127.0.0.1";
-                option.Connection.UserName = "guest";
-                option.Connection.Password = "guest";
-                option.Connection.Port = -1;
-                option.Connection.VirtualHost = "/";
-
+                var connection = new RabbitMqConnectionConfigure();
+                Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connection);
+                option.Connection = connection;
             });
             services.AddEventBus()
-                .AddRabbitMq(option =>
-                {
-                    option.SetExchangeAndQueue("WebAppPublishExchange", "event_bus_rabbitmq_default_queue");
-                });
+                .AddRabbitMq();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

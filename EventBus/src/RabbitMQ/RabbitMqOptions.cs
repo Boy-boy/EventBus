@@ -2,7 +2,7 @@
 {
     public class RabbitMqOptions
     {
-        public RabbitMqConnectionConfigure Connection { get; }
+        public RabbitMqConnectionConfigure Connection { get; set; }
 
         public RabbitMqOptions()
         {

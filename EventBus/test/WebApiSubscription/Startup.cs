@@ -26,19 +26,13 @@ namespace WebApiSubscription
             services.AddControllers();
             services.AddRabbitMq(option =>
             {
-                option.Connection.HostName = "127.0.0.1";
-                option.Connection.UserName = "guest";
-                option.Connection.Password = "guest";
-                option.Connection.Port = -1;
-                option.Connection.VirtualHost = "/";
-
+                var connection = new RabbitMqConnectionConfigure();
+                Configuration.Bind(typeof(RabbitMqConnectionConfigure).Name, connection);
+                option.Connection = connection;
             });
             services.AddEventBus()
                 .AddEventHandler<UserEvent, UserEventHandler>()
-                .AddRabbitMq(option =>
-                {
-                    option.SetExchangeAndQueue("WebAppPublishExchange", "event_bus_rabbitmq_default_queue");
-                });
+                .AddRabbitMq();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
