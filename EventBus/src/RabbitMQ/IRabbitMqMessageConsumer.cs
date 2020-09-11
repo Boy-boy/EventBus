@@ -11,6 +11,8 @@ namespace RabbitMQ
 
         Task UnbindAsync(string routingKey);
 
+        bool HasRoutingKeyBindingQueue();
+
         void OnMessageReceived(Func<IModel, BasicDeliverEventArgs, Task> processEvent);
     }
 }

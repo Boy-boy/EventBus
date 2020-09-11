@@ -2,6 +2,7 @@
 
 namespace PublishEvents
 {
+    [EventName("UserEvent")]
     public class UserEvent : IntegrationEvent
     {
         public UserEvent(int age, string name)

@@ -3,6 +3,8 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,6 +21,8 @@ namespace RabbitMQ
         protected RabbitMqQueueDeclareConfigure QueueDeclare { get; private set; }
         protected IModel ConsumerChannel { get; private set; }
 
+        protected ConcurrentDictionary<string,string> BindingQueueRoutingKeys { get; private set; }
+
         public DefaultRabbitMqMessageConsumer(
             IRabbitMqPersistentConnection connection,
             ILogger<DefaultRabbitMqMessageConsumer> logger)
@@ -26,6 +30,7 @@ namespace RabbitMQ
             _logger = logger;
             _persistentConnection = connection;
             ProcessEvents = new ConcurrentBag<Func<IModel, BasicDeliverEventArgs, Task>>();
+            BindingQueueRoutingKeys=new ConcurrentDictionary<string, string>();
         }
 
         public void Initialize(
@@ -72,6 +77,7 @@ namespace RabbitMQ
                 channel.QueueBind(queue: QueueDeclare.QueueName,
                     exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
+                BindingQueueRoutingKeys.TryAdd(routingKey,QueueDeclare.QueueName);
             }
             return Task.CompletedTask;
         }
@@ -87,6 +93,7 @@ namespace RabbitMQ
                 channel.QueueUnbind(queue: QueueDeclare.QueueName,
                     exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
+                BindingQueueRoutingKeys.TryRemove(routingKey,out var queueName);
             }
             return Task.CompletedTask;
         }
@@ -94,6 +101,7 @@ namespace RabbitMQ
         public void Dispose()
         {
             ConsumerChannel?.Dispose();
+            ConsumerChannel = null;
             if (_timer == null)
                 return;
             _timer.Dispose();
@@ -140,7 +148,7 @@ namespace RabbitMQ
                 // Even on exception we take the message off the queue.
                 // in a REAL WORLD app this should be handled with a Dead Letter Exchange (DLX). 
                 // For more information see: https://www.rabbitmq.com/dlx.html
-                asyncEventingBasicConsumer?.Model.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                asyncEventingBasicConsumer?.Model?.BasicAck(eventArgs.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
             {
@@ -148,5 +156,9 @@ namespace RabbitMQ
             }
         }
 
+        public bool HasRoutingKeyBindingQueue()
+        {
+            return BindingQueueRoutingKeys.Any();
+        }
     }
 }

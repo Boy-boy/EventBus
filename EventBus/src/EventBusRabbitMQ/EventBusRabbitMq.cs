@@ -53,10 +53,12 @@ namespace EventBus.RabbitMQ
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             var (exchangeName, queueName) = GetSubscribeConfigure(eventType);
             var key = $"{exchangeName}_{queueName}";
-            if (RabbitMqMessageConsumerDic.ContainsKey(key))
-            {
-                RabbitMqMessageConsumerDic[key].UnbindAsync(eventName);
-            }
+            if (!RabbitMqMessageConsumerDic.ContainsKey(key)) return;
+            var rabbitMqMessageConsumer = RabbitMqMessageConsumerDic[key];
+            rabbitMqMessageConsumer.UnbindAsync(eventName);
+            if (rabbitMqMessageConsumer.HasRoutingKeyBindingQueue()) return;
+            rabbitMqMessageConsumer.Dispose();
+            RabbitMqMessageConsumerDic.TryRemove(key, out _);
         }
 
         protected override Task PublishAsync(Type eventType, IntegrationEvent eventDate)
@@ -196,7 +198,6 @@ namespace EventBus.RabbitMQ
         private async Task ProcessEvent(string eventName, string message)
         {
             _logger.LogTrace("Processing RabbitMQ event: {eventName}", eventName);
-
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
                 var eventHandleTypes = _subsManager.GetHandlerTypes(eventName);
@@ -214,6 +215,7 @@ namespace EventBus.RabbitMQ
             {
                 _logger.LogWarning("No subscription for RabbitMQ event: {eventName}", eventName);
             }
+
         }
     }
 }
