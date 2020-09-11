@@ -21,7 +21,7 @@ namespace RabbitMQ
         protected RabbitMqQueueDeclareConfigure QueueDeclare { get; private set; }
         protected IModel ConsumerChannel { get; private set; }
 
-        protected ConcurrentDictionary<string,string> BindingQueueRoutingKeys { get; private set; }
+        protected ConcurrentDictionary<string, string> BindingQueueRoutingKeys { get; }
 
         public DefaultRabbitMqMessageConsumer(
             IRabbitMqPersistentConnection connection,
@@ -30,7 +30,7 @@ namespace RabbitMQ
             _logger = logger;
             _persistentConnection = connection;
             ProcessEvents = new ConcurrentBag<Func<IModel, BasicDeliverEventArgs, Task>>();
-            BindingQueueRoutingKeys=new ConcurrentDictionary<string, string>();
+            BindingQueueRoutingKeys = new ConcurrentDictionary<string, string>();
         }
 
         public void Initialize(
@@ -77,7 +77,7 @@ namespace RabbitMQ
                 channel.QueueBind(queue: QueueDeclare.QueueName,
                     exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
-                BindingQueueRoutingKeys.TryAdd(routingKey,QueueDeclare.QueueName);
+                BindingQueueRoutingKeys.TryAdd(routingKey, QueueDeclare.QueueName);
             }
             return Task.CompletedTask;
         }
@@ -93,7 +93,7 @@ namespace RabbitMQ
                 channel.QueueUnbind(queue: QueueDeclare.QueueName,
                     exchange: ExchangeDeclare.ExchangeName,
                     routingKey: routingKey);
-                BindingQueueRoutingKeys.TryRemove(routingKey,out var queueName);
+                BindingQueueRoutingKeys.TryRemove(routingKey, out _);
             }
             return Task.CompletedTask;
         }
