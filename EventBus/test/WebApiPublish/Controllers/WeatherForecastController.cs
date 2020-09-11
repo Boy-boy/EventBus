@@ -29,7 +29,7 @@ namespace WebApiPublish.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
-            for (var i = 0; i < 100; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 _eventBus.PublishAsync(new UserEvent(i, $"My name is {i}{i}{i}{i}{i}{i}{i}{i}"));
             }

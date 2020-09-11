@@ -28,7 +28,7 @@ namespace EventBus.RabbitMQ
         private readonly EventBusRabbitMqOptions _eventBusRabbitMqOptions;
         private readonly int _retryCount = 5;
         private readonly object _lock = new object();
-        protected ConcurrentDictionary<string, IRabbitMqMessageConsumer> RabbitMqMessageConsumerDic { get; }
+        protected ConcurrentDictionary<string, IRabbitMqMessageConsumer> RabbitMqMessageConsumerDic { get; private set; }
 
 
         public EventBusRabbitMq(
@@ -129,8 +129,7 @@ namespace EventBus.RabbitMQ
             {
                 rabbitMqMessageConsumer.Value?.Dispose();
             }
-            _persistentConnection?.Dispose();
-            _subsManager?.Dispose();
+            RabbitMqMessageConsumerDic = new ConcurrentDictionary<string, IRabbitMqMessageConsumer>();
         }
 
         private IRabbitMqMessageConsumer TeyGetOrSetMessageConsumer(Type eventType)

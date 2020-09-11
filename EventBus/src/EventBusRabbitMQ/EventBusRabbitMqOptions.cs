@@ -17,10 +17,10 @@ namespace EventBus.RabbitMQ
         }
 
 
-        public EventBusRabbitMqOptions AddPublishConfigure(Action<RabbitMqPublishConfigure> configureBuilder)
+        public EventBusRabbitMqOptions AddPublishConfigure(Action<RabbitMqPublishConfigure> configureOptions)
         {
-            if (configureBuilder == null) return this;
-            configureBuilder.Invoke(RabbitMqPublishConfigure);
+            if (configureOptions == null) return this;
+            configureOptions.Invoke(RabbitMqPublishConfigure);
             return this;
         }
 

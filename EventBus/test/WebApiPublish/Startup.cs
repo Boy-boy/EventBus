@@ -20,6 +20,7 @@ namespace WebApiPublish
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
             services.AddRabbitMq(option =>
             {
                 var connection = new RabbitMqConnectionConfigure();
@@ -27,7 +28,10 @@ namespace WebApiPublish
                 option.Connection = connection;
             });
             services.AddEventBus()
-                .AddRabbitMq();
+                .AddRabbitMq(configureOptions =>
+                    {
+                        configureOptions.AddPublishConfigure(option => { option.ExchangeName = "Customer_Exchange"; });
+                    });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

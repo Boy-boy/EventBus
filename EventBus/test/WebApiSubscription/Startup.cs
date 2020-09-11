@@ -24,6 +24,7 @@ namespace WebApiSubscription
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
             services.AddRabbitMq(option =>
             {
                 var connection = new RabbitMqConnectionConfigure();
@@ -32,7 +33,13 @@ namespace WebApiSubscription
             });
             services.AddEventBus()
                 .AddEventHandler<UserEvent, UserEventHandler>()
-                .AddRabbitMq();
+                .AddRabbitMq(configureOptions =>
+                {
+                    configureOptions.AddSubscribeConfigures(options =>
+                    {
+                        options.Add(new RabbitMqSubscribeConfigure(typeof(UserEvent), "Customer_Exchange", "Customer_Queue"));
+                    });
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

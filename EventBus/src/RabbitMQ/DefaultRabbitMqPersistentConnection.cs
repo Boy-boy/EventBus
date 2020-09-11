@@ -15,7 +15,7 @@ namespace RabbitMQ
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<DefaultRabbitMqPersistentConnection> _logger;
-        private readonly int _retryCount = 5;
+        private readonly int _retryCount = 6;
         IConnection _connection;
         bool _disposed;
 
