@@ -8,6 +8,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace EventBus.RabbitMQ
         private readonly EventBusRabbitMqOptions _eventBusRabbitMqOptions;
         private readonly int _retryCount = 5;
         private readonly object _lock = new object();
-        protected IRabbitMqMessageConsumer RabbitMqMessageConsumer { get; private set; }
+        protected ConcurrentDictionary<string, IRabbitMqMessageConsumer> RabbitMqMessageConsumerDic { get; }
 
 
         public EventBusRabbitMq(
@@ -43,12 +44,19 @@ namespace EventBus.RabbitMQ
             _subsManager = subsManager ?? throw new ArgumentNullException(nameof(subsManager));
             _eventHandlerFactory = eventHandlerFactory ?? throw new ArgumentNullException(nameof(eventHandlerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            RabbitMqMessageConsumerDic = new ConcurrentDictionary<string, IRabbitMqMessageConsumer>();
             _subsManager.OnEventRemoved += SubsManager_OnEventRemoved;
         }
 
-        private void SubsManager_OnEventRemoved(object sender, string eventName)
+        private void SubsManager_OnEventRemoved(object sender, Type eventType)
         {
-            RabbitMqMessageConsumer?.UnbindAsync(eventName);
+            var eventName = EventNameAttribute.GetNameOrDefault(eventType);
+            var (exchangeName, queueName) = GetSubscribeConfigure(eventType);
+            var key = $"{exchangeName}_{queueName}";
+            if (RabbitMqMessageConsumerDic.ContainsKey(key))
+            {
+                RabbitMqMessageConsumerDic[key].UnbindAsync(eventName);
+            }
         }
 
         protected override Task PublishAsync(Type eventType, IntegrationEvent eventDate)
@@ -74,7 +82,8 @@ namespace EventBus.RabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
 
                 var model = channel;
-                model.ExchangeDeclare(exchange: _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName, type: "direct", durable: true);
+                var exchangeName = GetPublishConfigure();
+                model.ExchangeDeclare(exchange: exchangeName, type: "direct", durable: true);
                 policy.Execute(() =>
                 {
                     var properties = model.CreateBasicProperties();
@@ -83,7 +92,7 @@ namespace EventBus.RabbitMQ
                     _logger.LogTrace("Publishing event to RabbitMQ: {EventId}", eventDate.Id);
 
                     model.BasicPublish(
-                        exchange: _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName,
+                        exchange: exchangeName,
                         routingKey: eventName,
                         mandatory: true,
                         basicProperties: properties,
@@ -95,10 +104,11 @@ namespace EventBus.RabbitMQ
 
         protected override void Subscribe(Type eventType, Type handlerType)
         {
-            SetMessageConsumer(eventType);
+            var rabbitMqMessageConsumer = TeySetOrGetMessageConsumer(eventType);
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
+            _logger.LogInformation("Subscribing from event {EventName}", eventName);
             if (!_subsManager.IncludeSubscriptionsHandlesForEventName(eventName))
-                RabbitMqMessageConsumer?.BindAsync(eventName);
+                rabbitMqMessageConsumer?.BindAsync(eventName);
             _subsManager.AddSubscription(eventType, handlerType);
 
         }
@@ -112,30 +122,32 @@ namespace EventBus.RabbitMQ
 
         public void Dispose()
         {
-            RabbitMqMessageConsumer?.Dispose();
+            foreach (var rabbitMqMessageConsumer in RabbitMqMessageConsumerDic)
+            {
+                rabbitMqMessageConsumer.Value?.Dispose();
+            }
             _persistentConnection?.Dispose();
             _subsManager?.Dispose();
         }
 
-        private void SetMessageConsumer(Type eventType)
+        private IRabbitMqMessageConsumer TeySetOrGetMessageConsumer(Type eventType)
         {
-            var rabbitMqSubscribeConfigure = _eventBusRabbitMqOptions.RabbitSubscribeConfigures.Find(p => p.EventType == eventType);
-            if (rabbitMqSubscribeConfigure != null)
-            {
-                RabbitMqMessageConsumer = _rabbitMqMessageConsumerFactory.Create(
-                    new RabbitMqExchangeDeclareConfigure(_eventBusRabbitMqOptions.ExchangeName, "direct", true),
-                    new RabbitMqQueueDeclareConfigure(_eventBusRabbitMqOptions.QueueName));
-                RabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
-            }
-
-            if (RabbitMqMessageConsumer != null) return;
+            var (exchangeName, queueName) = GetSubscribeConfigure(eventType);
+            var key = $"{exchangeName}_{queueName}";
+            if (RabbitMqMessageConsumerDic.ContainsKey(key))
+                return RabbitMqMessageConsumerDic[key];
             lock (_lock)
             {
-                if (RabbitMqMessageConsumer != null) return;
-                RabbitMqMessageConsumer = _rabbitMqMessageConsumerFactory.Create(
-                    new RabbitMqExchangeDeclareConfigure(_eventBusRabbitMqOptions.ExchangeName, "direct", true),
-                    new RabbitMqQueueDeclareConfigure(_eventBusRabbitMqOptions.QueueName));
-                RabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
+                if (RabbitMqMessageConsumerDic.ContainsKey(key))
+                    return RabbitMqMessageConsumerDic[key];
+
+                var rabbitMqMessageConsumer = _rabbitMqMessageConsumerFactory.Create(
+                    new RabbitMqExchangeDeclareConfigure(exchangeName, "direct", true),
+                    new RabbitMqQueueDeclareConfigure(queueName));
+                rabbitMqMessageConsumer.OnMessageReceived(Consumer_Received);
+
+                RabbitMqMessageConsumerDic.TryAdd(key, rabbitMqMessageConsumer);
+                return rabbitMqMessageConsumer;
             }
         }
 
@@ -146,11 +158,21 @@ namespace EventBus.RabbitMQ
                 : _eventBusRabbitMqOptions.RabbitMqPublishConfigure.ExchangeName;
         }
 
-        private (string, string) GetSubscribeConfigures(Type eventType)
+        private (string ExchangeName, string QueueName) GetSubscribeConfigure(Type eventType)
         {
             var subscribeConfigure = _eventBusRabbitMqOptions.RabbitSubscribeConfigures.Find(p => p.EventType == eventType);
+            if (subscribeConfigure == null)
+                return (EXCHANGE_NAME, QUEUE_NAME);
 
-            return ("", "");
+            var exchangeName = string.IsNullOrEmpty(subscribeConfigure.ExchangeName)
+                ? EXCHANGE_NAME
+                : subscribeConfigure.ExchangeName;
+
+            var queueName = string.IsNullOrEmpty(subscribeConfigure.QueueName)
+                ? QUEUE_NAME
+                : subscribeConfigure.QueueName;
+
+            return (exchangeName, queueName);
         }
 
         private async Task Consumer_Received(IModel model, BasicDeliverEventArgs eventArgs)

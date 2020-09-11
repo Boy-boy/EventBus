@@ -8,7 +8,7 @@ namespace EventBus
 {
     public class InMemoryEventBusSubscriptionsManager : IEventBusSubscriptionsManager
     {
-        public event EventHandler<string> OnEventRemoved;
+        public event EventHandler<Type> OnEventRemoved;
 
         private ConcurrentDictionary<string, List<Type>> _handlers { get; }
         private ConcurrentDictionary<string, Type> _eventTypes { get; }
@@ -97,8 +97,8 @@ namespace EventBus
         private void RaiseOnEventRemoved(string eventName)
         {
             var handler = OnEventRemoved;
-            handler?.Invoke(this, eventName);
             _eventTypes.TryGetValue(eventName, out var eventType);
+            handler?.Invoke(this, eventType);
             if (eventType != null)
             {
                 _eventTypes.TryRemove(eventName, out _);

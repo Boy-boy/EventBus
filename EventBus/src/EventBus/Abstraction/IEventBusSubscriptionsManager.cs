@@ -10,7 +10,7 @@ namespace EventBus.Abstraction
     {
         ICollection<Type> GetHandlerTypes(string eventName);
 
-        event EventHandler<string> OnEventRemoved;
+        event EventHandler<Type> OnEventRemoved;
 
         void AddSubscription<T, TH>()
             where T : IntegrationEvent
