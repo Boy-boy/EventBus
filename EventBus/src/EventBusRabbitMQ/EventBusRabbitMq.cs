@@ -9,6 +9,7 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -200,7 +201,7 @@ namespace EventBus.RabbitMQ
             _logger.LogTrace("Processing RabbitMQ event: {eventName}", eventName);
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
-                var eventHandleTypes = _subsManager.GetHandlerTypes(eventName);
+                var eventHandleTypes = _subsManager.GetHandlerTypes(eventName)?.ToList();
                 foreach (var eventHandleType in eventHandleTypes)
                 {
                     var handlerInstance = _eventHandlerFactory.GetHandler(eventHandleType);
