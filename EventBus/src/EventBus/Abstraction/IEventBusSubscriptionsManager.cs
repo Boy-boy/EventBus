@@ -8,8 +8,6 @@ namespace EventBus.Abstraction
     /// </summary>
     public interface IEventBusSubscriptionsManager : IDisposable
     {
-        ICollection<Type> GetHandlerTypes(string eventName);
-
         event EventHandler<Type> OnEventRemoved;
 
         void AddSubscription<T, TH>()
@@ -29,6 +27,8 @@ namespace EventBus.Abstraction
         bool IncludeSubscriptionsHandlesForEventName(string eventName);
 
         bool IncludeEventTypeForEventName(string eventName);
+
+        List<Type> TryGetEventHandlerTypes(string eventName);
 
         Type TryGetEventTypeForEventName(string eventName);
 

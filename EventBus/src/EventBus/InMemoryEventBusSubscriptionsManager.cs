@@ -18,12 +18,7 @@ namespace EventBus
             _handlers = new ConcurrentDictionary<string, List<Type>>();
             _eventTypes = new ConcurrentDictionary<string, Type>();
         }
-        public ICollection<Type> GetHandlerTypes(string eventName)
-        {
-            _handlers.TryGetValue(eventName, out var handles);
-            return handles ?? new List<Type>();
-        }
-
+        
         #region AddSubscription
         public void AddSubscription<T, TH>()
             where T : IntegrationEvent
@@ -34,7 +29,7 @@ namespace EventBus
         public void AddSubscription(Type eventType, Type handlerType)
         {
             TryAddSubscriptionEventType(eventType);
-            TryAddSubscriptionHandler(eventType, handlerType);
+            TryAddSubscriptionEventHandler(eventType, handlerType);
         }
         private void TryAddSubscriptionEventType(Type eventType)
         {
@@ -53,7 +48,7 @@ namespace EventBus
                 _eventTypes[eventName] = eventType;
             }
         }
-        private void TryAddSubscriptionHandler(Type eventType, Type handlerType)
+        private void TryAddSubscriptionEventHandler(Type eventType, Type handlerType)
         {
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             if (!IncludeSubscriptionsHandlesForEventName(eventName))
@@ -109,6 +104,12 @@ namespace EventBus
         public bool IncludeSubscriptionsHandlesForEventName(string eventName) => _handlers.ContainsKey(eventName);
 
         public bool IncludeEventTypeForEventName(string eventName) => _eventTypes.ContainsKey(eventName);
+
+        public List<Type> TryGetEventHandlerTypes(string eventName)
+        {
+            _handlers.TryGetValue(eventName, out var handles);
+            return handles ?? new List<Type>();
+        }
 
         public Type TryGetEventTypeForEventName(string eventName)
         {

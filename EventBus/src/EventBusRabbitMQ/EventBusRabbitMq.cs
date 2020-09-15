@@ -200,7 +200,7 @@ namespace EventBus.RabbitMQ
             _logger.LogTrace("Processing RabbitMQ event: {eventName}", eventName);
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
-                var eventHandleTypes = _subsManager.GetHandlerTypes(eventName)?.ToList();
+                var eventHandleTypes = _subsManager.TryGetEventHandlerTypes(eventName);
                 foreach (var eventHandleType in eventHandleTypes)
                 {
                     var handlerInstance = _eventHandlerFactory.GetHandler(eventHandleType);

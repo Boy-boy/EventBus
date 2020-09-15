@@ -29,7 +29,7 @@ namespace EventBus.Local
             var eventName = EventNameAttribute.GetNameOrDefault(eventType);
             if (_subsManager.IncludeEventTypeForEventName(eventName))
             {
-                var eventHandleTypes = _subsManager.GetHandlerTypes(eventName);
+                var eventHandleTypes = _subsManager.TryGetEventHandlerTypes(eventName);
                 foreach (var eventHandleType in eventHandleTypes)
                 {
                     try
